@@ -4,6 +4,8 @@ import { Badge, Button, Card, CardHeader, Progress, Skeleton, useToast } from '.
 import { I } from '../../components/icons'
 
 const PLAN_LABELS: Record<string, string> = {
+  monthly: 'Mensal',
+  annual: 'Anual',
   trial: 'Trial',
   starter: 'Starter',
   pro: 'Pro',
@@ -12,6 +14,8 @@ const PLAN_LABELS: Record<string, string> = {
 
 const PLAN_TONES: Record<string, 'success' | 'warning' | 'info' | 'accent'> = {
   trial: 'warning',
+  monthly: 'info',
+  annual: 'success',
   starter: 'info',
   pro: 'success',
   enterprise: 'accent',
@@ -26,7 +30,7 @@ export default function BillingPage() {
   })
 
   const checkoutMutation = useMutation({
-    mutationFn: (plan: string) => api.billing.checkout(plan),
+    mutationFn: (plan: string) => api.billing.checkout(plan as 'monthly' | 'annual'),
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url
     },
@@ -45,11 +49,16 @@ export default function BillingPage() {
     ? Math.max(0, 30 - Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0
 
+  const planLabel = PLAN_LABELS[subscription?.planType ?? ''] ?? subscription?.planType ?? '—'
+  const planTone = PLAN_TONES[subscription?.planType ?? '']
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <h1 className="h1">Faturamento</h1>
-        <p className="muted text-sm">Gerencie seu plano e assinatura</p>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
+          <h1 className="h1">Faturamento</h1>
+          <div className="muted text-sm">Gerencie seu plano e assinatura</div>
+        </div>
       </div>
 
       {isLoading ? (
@@ -60,11 +69,9 @@ export default function BillingPage() {
             <CardHeader
               title="Plano atual"
               action={
-                subscription?.planType && (
-                  <Badge tone={PLAN_TONES[subscription.plan]}>
-                    {PLAN_LABELS[subscription.plan] ?? subscription.plan}
-                  </Badge>
-                )
+                subscription?.planType ? (
+                  <Badge tone={planTone}>{planLabel}</Badge>
+                ) : undefined
               }
             />
 
@@ -91,9 +98,9 @@ export default function BillingPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {subscription?.planType !== 'trial' ? (
+              {subscription?.planType && subscription.planType !== 'trial' ? (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   leftIcon={<I.card size={14} />}
                   onClick={() => portalMutation.mutate()}
                   disabled={portalMutation.isPending}
@@ -104,7 +111,7 @@ export default function BillingPage() {
                 <Button
                   variant="primary"
                   leftIcon={<I.card size={14} />}
-                  onClick={() => checkoutMutation.mutate('starter')}
+                  onClick={() => checkoutMutation.mutate('monthly')}
                   disabled={checkoutMutation.isPending}
                 >
                   {checkoutMutation.isPending ? 'Aguarde…' : 'Assinar agora'}
@@ -116,55 +123,48 @@ export default function BillingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
             {[
               {
-                plan: 'starter',
-                label: 'Starter',
-                price: 'R$ 97/mês',
-                features: ['Até 500 parceiros', '2 usuários', 'Suporte via e-mail'],
-              },
-              {
-                plan: 'pro',
-                label: 'Pro',
+                plan: 'monthly',
+                label: 'Mensal',
                 price: 'R$ 197/mês',
-                features: ['Parceiros ilimitados', '10 usuários', 'Suporte prioritário', 'Embeds ilimitados'],
+                features: ['Parceiros ilimitados', 'Usuários ilimitados', 'Suporte via e-mail', 'Mapas públicos'],
               },
               {
-                plan: 'enterprise',
-                label: 'Enterprise',
-                price: 'Sob consulta',
-                features: ['Parceiros ilimitados', 'Usuários ilimitados', 'SLA garantido', 'Onboarding dedicado'],
+                plan: 'annual',
+                label: 'Anual',
+                price: 'R$ 1.970/ano',
+                features: ['Tudo do Mensal', '2 meses grátis', 'Suporte prioritário', 'Onboarding dedicado'],
               },
-            ].map((p) => (
-              <Card key={p.plan} style={subscription?.planType === p.plan ? { border: '1px solid var(--amber)' } : undefined}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{p.price}</div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {p.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>
-                      <I.check size={12} style={{ color: 'var(--success)', flexShrink: 0 }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {subscription?.planType !== p.plan && p.plan !== 'enterprise' && (
-                  <Button
-                    variant="outline"
-                    style={{ width: '100%', marginTop: 16 }}
-                    onClick={() => checkoutMutation.mutate(p.plan)}
-                    disabled={checkoutMutation.isPending}
-                  >
-                    Assinar {p.label}
-                  </Button>
-                )}
-                {p.plan === 'enterprise' && (
-                  <Button variant="ghost" style={{ width: '100%', marginTop: 16 }}>
-                    Falar com vendas
-                  </Button>
-                )}
-                {subscription?.planType === p.plan && (
-                  <Badge tone="success" style={{ marginTop: 16 }}>Plano atual</Badge>
-                )}
-              </Card>
-            ))}
+            ].map((p) => {
+              const isCurrent = subscription?.planType === p.plan
+              return (
+                <Card key={p.plan} style={isCurrent ? { border: '1px solid var(--accent)' } : undefined}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{p.price}</div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {p.features.map((f) => (
+                      <li key={f} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>
+                        <I.check size={12} style={{ color: 'var(--success)', flexShrink: 0 }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div style={{ marginTop: 16 }}>
+                    {isCurrent ? (
+                      <Badge tone="success">Plano atual</Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        style={{ width: '100%' }}
+                        onClick={() => checkoutMutation.mutate(p.plan)}
+                        disabled={checkoutMutation.isPending}
+                      >
+                        Assinar {p.label}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         </>
       )}
