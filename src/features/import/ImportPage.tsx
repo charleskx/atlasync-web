@@ -46,26 +46,28 @@ export default function ImportPage() {
 
         qc.invalidateQueries({ queryKey: ['importJobs'] })
 
-        const url = api.import.progressUrl(jobId)
-        const es = new EventSource(url)
-        es.onmessage = (e) => {
-          const data = JSON.parse(e.data)
-          if (data.status === 'done' || data.status === 'failed') {
-            es.close()
-            qc.invalidateQueries({ queryKey: ['importJobs'] })
-            push({
-              title: data.status === 'done' ? 'Importação concluída' : 'Importação falhou',
-              desc: data.status === 'done'
-                ? `${data.created ?? 0} criados · ${data.updated ?? 0} atualizados`
-                : undefined,
-              tone: data.status === 'done' ? 'success' : 'error',
-            })
+        // Poll for progress since SSE requires auth header which EventSource can't send
+        const poll = setInterval(async () => {
+          try {
+            const job = await api.import.getById(jobId)
+            qc.setQueryData(['importJobs'], (old: typeof jobs) =>
+              old ? old.map((j) => (j.id === jobId ? job : j)) : [job],
+            )
+            if (job.status === 'done' || job.status === 'failed') {
+              clearInterval(poll)
+              qc.invalidateQueries({ queryKey: ['importJobs'] })
+              push({
+                title: job.status === 'done' ? 'Importação concluída' : 'Importação falhou',
+                desc: job.status === 'done'
+                  ? `${job.created ?? 0} criados · ${job.updated ?? 0} atualizados`
+                  : undefined,
+                tone: job.status === 'done' ? 'success' : 'error',
+              })
+            }
+          } catch {
+            clearInterval(poll)
           }
-        }
-        es.onerror = () => {
-          es.close()
-          qc.invalidateQueries({ queryKey: ['importJobs'] })
-        }
+        }, 2000)
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Erro ao importar'
         push({ title: 'Erro', desc: msg, tone: 'error' })

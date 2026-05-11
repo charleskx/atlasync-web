@@ -36,16 +36,16 @@ export default function IntegrationsPage() {
     onError: () => push({ title: 'Erro ao remover', tone: 'error' }),
   })
 
-  const copyEmbed = async (token: string, id: string) => {
+  const copyEmbed = async (embedToken: string, id: string) => {
     const base = window.location.origin
-    const code = `<iframe src="${base}/public-map/${token}" width="100%" height="500" frameborder="0" allowfullscreen></iframe>`
+    const code = `<iframe src="${base}/public-map/${embedToken}" width="100%" height="500" frameborder="0" allowfullscreen></iframe>`
     await navigator.clipboard.writeText(code)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const copyLink = async (token: string, id: string) => {
-    const url = `${window.location.origin}/public-map/${token}`
+  const copyLink = async (embedToken: string, id: string) => {
+    const url = `${window.location.origin}/public-map/${embedToken}`
     await navigator.clipboard.writeText(url)
     setCopiedId(id + '-link')
     setTimeout(() => setCopiedId(null), 2000)
@@ -97,40 +97,46 @@ export default function IntegrationsPage() {
                 }
               />
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div
-                  style={{
-                    background: 'var(--bg-subtle)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
-                    padding: '8px 12px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
-                    color: 'var(--fg-muted)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {`<iframe src="${window.location.origin}/public-map/${m.token}" width="100%" height="500" frameborder="0"></iframe>`}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<I.copy size={12} />}
-                    onClick={() => copyEmbed(m.token, m.id)}
-                  >
-                    {copiedId === m.id ? 'Copiado!' : 'Copiar embed'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<I.link size={12} />}
-                    onClick={() => copyLink(m.token, m.id)}
-                  >
-                    {copiedId === m.id + '-link' ? 'Copiado!' : 'Copiar link'}
-                  </Button>
-                </div>
+                {m.embedToken ? (
+                  <>
+                    <div
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 6,
+                        padding: '8px 12px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 12,
+                        color: 'var(--fg-muted)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {`<iframe src="${window.location.origin}/public-map/${m.embedToken}" width="100%" height="500" frameborder="0"></iframe>`}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<I.copy size={12} />}
+                        onClick={() => copyEmbed(m.embedToken!, m.id)}
+                      >
+                        {copiedId === m.id ? 'Copiado!' : 'Copiar embed'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<I.link size={12} />}
+                        onClick={() => copyLink(m.embedToken!, m.id)}
+                      >
+                        {copiedId === m.id + '-link' ? 'Copiado!' : 'Copiar link'}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="muted text-sm">Token de embed não gerado</div>
+                )}
               </div>
             </Card>
           ))}

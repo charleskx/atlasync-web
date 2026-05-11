@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import type { ExportColumn } from '../../types'
 import { Button, Card, CardHeader, Checkbox, Field, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
@@ -8,31 +9,31 @@ export default function ExportPage() {
   const { push } = useToast()
   const [format, setFormat] = useState('xlsx')
   const [loading, setLoading] = useState(false)
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([])
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
 
   const { data: columns, isLoading: columnsLoading } = useQuery({
     queryKey: ['exportColumns'],
     queryFn: async () => {
       const cols = await api.export.getColumns()
-      setSelectedColumns(cols)
+      setSelectedKeys(cols.map((c) => c.key))
       return cols
     },
   })
 
-  const toggleColumn = (col: string) => {
-    setSelectedColumns((prev) =>
-      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col],
+  const toggleColumn = (col: ExportColumn) => {
+    setSelectedKeys((prev) =>
+      prev.includes(col.key) ? prev.filter((k) => k !== col.key) : [...prev, col.key],
     )
   }
 
   const handleExport = async () => {
-    if (!selectedColumns.length) {
+    if (!selectedKeys.length) {
       push({ title: 'Selecione pelo menos uma coluna', tone: 'error' })
       return
     }
     setLoading(true)
     try {
-      const blob = await api.export.download(selectedColumns, format as 'xlsx' | 'csv')
+      const blob = await api.export.download(selectedKeys, format as 'xlsx' | 'csv')
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -79,12 +80,15 @@ export default function ExportPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {columns?.map((col) => (
-                  <label key={col} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                     <Checkbox
-                      checked={selectedColumns.includes(col)}
+                      checked={selectedKeys.includes(col.key)}
                       onChange={() => toggleColumn(col)}
                     />
-                    <span className="text-sm">{col}</span>
+                    <span className="text-sm">{col.label}</span>
+                    {col.type === 'dynamic' && (
+                      <span className="muted text-sm" style={{ fontSize: 11 }}>(personalizado)</span>
+                    )}
                   </label>
                 ))}
               </div>
@@ -95,7 +99,7 @@ export default function ExportPage() {
             variant="primary"
             leftIcon={<I.download size={14} />}
             onClick={handleExport}
-            disabled={loading || !selectedColumns.length}
+            disabled={loading || !selectedKeys.length}
           >
             {loading ? 'Exportando…' : `Exportar como ${format.toUpperCase()}`}
           </Button>

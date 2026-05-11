@@ -14,9 +14,11 @@ export interface Tenant {
   slug: string
   email?: string
   active: boolean
-  plan: string
   createdAt: string
+  subscriptionStatus?: string | null
+  planType?: string | null
   trialEndsAt?: string | null
+  currentPeriodEnd?: string | null
 }
 
 export interface PinType {
@@ -54,6 +56,12 @@ export interface PartnerColumn {
   dataType: string
   sortOrder: number
   visible: boolean
+}
+
+export interface ExportColumn {
+  key: string
+  label: string
+  type: 'fixed' | 'dynamic'
 }
 
 export interface ImportJob {
@@ -95,9 +103,9 @@ export interface MapEntity {
   tenantId: string
   name: string
   type: 'internal' | 'public'
-  token: string
+  embedToken: string | null
   active: boolean
-  filters?: Record<string, unknown>
+  filters?: Record<string, unknown> | null
   createdAt: string
 }
 
@@ -110,12 +118,11 @@ export interface MapPin {
   city?: string | null
   state?: string | null
   visibility?: 'public' | 'internal'
-  pinTypeName?: string | null
-  pinTypeColor?: string | null
+  pinType?: { id: string; name: string; color: string } | null
 }
 
 export interface Subscription {
-  plan: string
+  planType: string
   status: 'active' | 'trialing' | 'canceled' | 'past_due'
   trialEndsAt?: string | null
   currentPeriodEnd?: string | null

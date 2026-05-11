@@ -48,9 +48,9 @@ function InfoPopup({ pin, onClose }: InfoPopupProps) {
       {pin.city && (
         <div className="muted text-sm">{[pin.city, pin.state].filter(Boolean).join(' / ')}</div>
       )}
-      {pin.pinTypeName && (
-        <Badge style={{ marginTop: 8, background: (pin.pinTypeColor ?? '#888') + '22', color: pin.pinTypeColor ?? undefined }}>
-          {pin.pinTypeName}
+      {pin.pinType && (
+        <Badge style={{ marginTop: 8, background: (pin.pinType.color ?? '#888') + '22', color: pin.pinType.color ?? undefined }}>
+          {pin.pinType.name}
         </Badge>
       )}
     </Card>
@@ -114,7 +114,7 @@ export default function MapPage() {
     pins.forEach((pin) => {
       if (!pin.lat || !pin.lng) return
       const el = document.createElement('div')
-      el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${pin.pinTypeColor ?? '#f59e0b'};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer`
+      el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${pin.pinType?.color ?? '#f59e0b'};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:pointer`
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         map: mapInstance.current!,

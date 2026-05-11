@@ -1,10 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth'
 import { Badge, Button, Input, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
+
+const PLAN_LABELS: Record<string, string> = {
+  monthly: 'Mensal',
+  annual: 'Anual',
+  trial: 'Trial',
+}
 
 export default function SuperAdminPage() {
   const { user } = useAuth()
@@ -13,11 +19,18 @@ export default function SuperAdminPage() {
   const { push } = useToast()
   const [search, setSearch] = useState('')
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'tenants', search],
-    queryFn: () => api.admin.tenants({ search: search || undefined }),
+  const { data: tenants, isLoading } = useQuery({
+    queryKey: ['admin', 'tenants'],
+    queryFn: () => api.admin.tenants(),
     enabled: user?.role === 'super_admin',
   })
+
+  const filtered = useMemo(() => {
+    if (!tenants) return []
+    if (!search) return tenants
+    const q = search.toLowerCase()
+    return tenants.filter((t) => t.name.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q))
+  }, [tenants, search])
 
   const blockMutation = useMutation({
     mutationFn: (id: string) => api.admin.blockTenant(id),
@@ -55,7 +68,7 @@ export default function SuperAdminPage() {
       <div className="page-header">
         <div className="page-title-block">
           <h1 className="h1">Super Admin</h1>
-          <div className="muted text-sm">Painel de administração da plataforma</div>
+          <div className="muted text-sm">{tenants?.length ?? 0} empresas na plataforma</div>
         </div>
       </div>
 
@@ -79,22 +92,33 @@ export default function SuperAdminPage() {
             <tr>
               <th>Empresa</th>
               <th>Plano</th>
-              <th>Parceiros</th>
-              <th>Usuários</th>
+              <th>Status assinatura</th>
               <th>Criado em</th>
               <th>Status</th>
               <th style={{ width: 80 }} />
             </tr>
           </thead>
           <tbody>
-            {data?.data.map((t) => (
+            {filtered.map((t) => (
               <tr key={t.id}>
-                <td style={{ fontWeight: 500 }}>{t.name}</td>
                 <td>
-                  <Badge tone={t.plan === 'trial' ? 'warning' : 'success'}>{t.plan}</Badge>
+                  <div style={{ fontWeight: 500 }}>{t.name}</div>
+                  {t.email && <div className="muted text-sm">{t.email}</div>}
                 </td>
-                <td className="muted">{t.partnerCount ?? 0}</td>
-                <td className="muted">{t.userCount ?? 0}</td>
+                <td>
+                  <Badge>{PLAN_LABELS[t.planType ?? ''] ?? t.planType ?? '—'}</Badge>
+                </td>
+                <td>
+                  <Badge
+                    tone={
+                      t.subscriptionStatus === 'active' ? 'success'
+                        : t.subscriptionStatus === 'trialing' ? 'warning'
+                          : 'danger'
+                    }
+                  >
+                    {t.subscriptionStatus ?? '—'}
+                  </Badge>
+                </td>
                 <td className="muted">{new Date(t.createdAt).toLocaleDateString('pt-BR')}</td>
                 <td>
                   <Badge tone={t.active ? 'success' : 'danger'} dot>

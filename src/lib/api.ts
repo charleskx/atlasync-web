@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type {
   AuthTokens,
+  ExportColumn,
   ImportJob,
   ImportUploadResponse,
   ListPartnersInput,
@@ -127,8 +128,16 @@ export const api = {
       if (!token) throw new Error('No token')
       const userId = decodeJwtSub(token)
       if (!userId) throw new Error('Invalid token')
-      const { data } = await http.get<User>(`/users/${userId}`)
-      return data
+      const { data } = await http.get<Record<string, unknown>>(`/users/${userId}`)
+      return {
+        id: data.id as string,
+        name: data.name as string,
+        email: data.email as string,
+        role: data.role as User['role'],
+        tenantId: data.tenantId as string,
+        emailVerified: data.emailVerified as boolean,
+        twoFactorEnabled: (data.totpEnabled ?? data.twoFactorEnabled) as boolean,
+      }
     },
 
     async logout() {
@@ -213,8 +222,8 @@ export const api = {
       await http.delete(`/partners/${id}`)
     },
     async getColumns(): Promise<PartnerColumn[]> {
-      const { data } = await http.get<{ columns: PartnerColumn[] }>('/partners/columns')
-      return data.columns
+      const { data } = await http.get<PartnerColumn[]>('/partners/columns')
+      return data
     },
   },
 
@@ -333,8 +342,8 @@ export const api = {
   },
 
   export: {
-    async getColumns(): Promise<string[]> {
-      const { data } = await http.get<{ columns: string[] }>('/export/columns')
+    async getColumns(): Promise<ExportColumn[]> {
+      const { data } = await http.get<{ columns: ExportColumn[] }>('/export/columns')
       return data.columns
     },
     async download(columns: string[], format: 'xlsx' | 'csv' = 'xlsx'): Promise<Blob> {
@@ -374,11 +383,8 @@ export const api = {
   },
 
   admin: {
-    async tenants(params?: {
-      search?: string
-      page?: number
-    }): Promise<PaginatedResponse<Tenant & { partnerCount: number; userCount: number }>> {
-      const { data } = await http.get('/admin/tenants', { params })
+    async tenants(): Promise<Tenant[]> {
+      const { data } = await http.get<Tenant[]>('/admin/tenants')
       return data
     },
     async getTenant(id: string): Promise<Tenant> {
@@ -415,6 +421,6 @@ export const api = {
   },
 
   superAdmin: {
-    tenants: (params?: { search?: string; page?: number }) => api.admin.tenants(params),
+    tenants: () => api.admin.tenants(),
   },
 }

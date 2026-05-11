@@ -60,7 +60,7 @@ export default function BillingPage() {
             <CardHeader
               title="Plano atual"
               action={
-                subscription?.plan && (
+                subscription?.planType && (
                   <Badge tone={PLAN_TONES[subscription.plan]}>
                     {PLAN_LABELS[subscription.plan] ?? subscription.plan}
                   </Badge>
@@ -68,7 +68,7 @@ export default function BillingPage() {
               }
             />
 
-            {subscription?.plan === 'trial' && (
+            {subscription?.planType === 'trial' && (
               <div style={{ marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span className="muted text-sm">Período trial</span>
@@ -83,7 +83,7 @@ export default function BillingPage() {
               </div>
             )}
 
-            {subscription?.plan !== 'trial' && subscription?.currentPeriodEnd && (
+            {subscription?.planType !== 'trial' && subscription?.currentPeriodEnd && (
               <div className="muted text-sm" style={{ marginTop: 12 }}>
                 Próxima renovação:{' '}
                 <strong>{new Date(subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}</strong>
@@ -91,7 +91,7 @@ export default function BillingPage() {
             )}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {subscription?.plan !== 'trial' ? (
+              {subscription?.planType !== 'trial' ? (
                 <Button
                   variant="secondary"
                   leftIcon={<I.card size={14} />}
@@ -134,7 +134,7 @@ export default function BillingPage() {
                 features: ['Parceiros ilimitados', 'Usuários ilimitados', 'SLA garantido', 'Onboarding dedicado'],
               },
             ].map((p) => (
-              <Card key={p.plan} style={subscription?.plan === p.plan ? { border: '1px solid var(--amber)' } : undefined}>
+              <Card key={p.plan} style={subscription?.planType === p.plan ? { border: '1px solid var(--amber)' } : undefined}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.label}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>{p.price}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -145,7 +145,7 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                {subscription?.plan !== p.plan && p.plan !== 'enterprise' && (
+                {subscription?.planType !== p.plan && p.plan !== 'enterprise' && (
                   <Button
                     variant="outline"
                     style={{ width: '100%', marginTop: 16 }}
@@ -160,7 +160,7 @@ export default function BillingPage() {
                     Falar com vendas
                   </Button>
                 )}
-                {subscription?.plan === p.plan && (
+                {subscription?.planType === p.plan && (
                   <Badge tone="success" style={{ marginTop: 16 }}>Plano atual</Badge>
                 )}
               </Card>
