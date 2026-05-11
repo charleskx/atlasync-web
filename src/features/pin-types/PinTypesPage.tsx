@@ -30,16 +30,19 @@ function PinTypeModal({ open, editing, onClose }: PinTypeModalProps) {
   }, [open, editing])
 
   const mutation = useMutation({
-    mutationFn: () =>
-      editing
-        ? api.pinTypes.update(editing.id, { name, color })
-        : api.pinTypes.create({ name, color }),
-    onSuccess: () => {
+    mutationFn: ({ id, payload }: { id: string | null; payload: { name: string; color: string } }) =>
+      id ? api.pinTypes.update(id, payload) : api.pinTypes.create(payload),
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['pinTypes'] })
-      push({ title: editing ? 'Tipo atualizado' : 'Tipo criado', tone: 'success' })
+      push({ title: vars.id ? 'Tipo atualizado' : 'Tipo criado', tone: 'success' })
       onClose()
     },
-    onError: (err: Error) => push({ title: 'Erro ao salvar', desc: err.message, tone: 'error' }),
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? (err as Error)?.message
+        ?? 'Erro desconhecido'
+      push({ title: 'Erro ao salvar', desc: msg, tone: 'error' })
+    },
   })
 
   return (
@@ -53,7 +56,7 @@ function PinTypeModal({ open, editing, onClose }: PinTypeModalProps) {
           <Button
             variant="primary"
             disabled={!name.trim() || !color || mutation.isPending}
-            onClick={() => mutation.mutate()}
+            onClick={() => mutation.mutate({ id: editing?.id ?? null, payload: { name, color } })}
           >
             {mutation.isPending ? 'Salvando…' : 'Salvar'}
           </Button>
