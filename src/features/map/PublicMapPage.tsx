@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../../lib/api'
-import type { MapEntity, MapPin } from '../../types'
+import type { MapPin } from '../../types'
 
 declare global {
   interface Window {
     initPublicMap: () => void
   }
 }
+
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY ?? ''
 
 function loadMapsScript(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -26,7 +28,6 @@ export default function PublicMapPage() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<google.maps.Map | null>(null)
   const markers = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
-  const [mapData, setMapData] = useState<MapEntity | null>(null)
   const [pins, setPins] = useState<MapPin[]>([])
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
@@ -35,10 +36,9 @@ export default function PublicMapPage() {
     if (!token) return
     api.maps
       .publicPins(token)
-      .then(({ map, pins: p, mapsKey }) => {
-        setMapData(map)
+      .then((p) => {
         setPins(p)
-        return loadMapsScript(mapsKey)
+        return loadMapsScript(GOOGLE_MAPS_KEY)
       })
       .then(() => setReady(true))
       .catch(() => setError('Mapa não encontrado ou acesso negado.'))
@@ -84,7 +84,7 @@ export default function PublicMapPage() {
 
   if (error) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 32, marginBottom: 16 }}>🗺️</div>
           <div className="h2">{error}</div>
@@ -95,24 +95,22 @@ export default function PublicMapPage() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {mapData && (
-        <div style={{ padding: '12px 20px', background: 'var(--bg-elev)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="sidebar-mark" style={{ width: 28, height: 28 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" />
-              <circle cx="12" cy="9" r="2.5" fill="currentColor" />
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{mapData.name}</div>
-            <div className="muted text-sm">{pins.length} parceiro{pins.length !== 1 ? 's' : ''}</div>
-          </div>
+      <div style={{ padding: '12px 20px', background: 'var(--bg-elev)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="sidebar-mark" style={{ width: 28, height: 28 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" />
+            <circle cx="12" cy="9" r="2.5" fill="currentColor" />
+          </svg>
         </div>
-      )}
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>atlasync</div>
+          <div className="muted text-sm">{pins.length} parceiro{pins.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
       <div style={{ flex: 1, position: 'relative' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
         {!ready && !error && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
             <div className="muted">Carregando mapa…</div>
           </div>
         )}

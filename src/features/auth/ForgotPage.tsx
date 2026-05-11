@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
-import { Button, Field, Input, useToast } from '../../components/ui'
+import { Button, Card, Field, Input, useToast } from '../../components/ui'
+import { I } from '../../components/icons'
 import AuthAside from './AuthAside'
 
 export default function ForgotPage() {
@@ -25,45 +26,58 @@ export default function ForgotPage() {
   }
 
   return (
-    <div className="auth-layout">
+    <div className="auth-page">
       <AuthAside />
-      <main className="auth-main">
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1 className="h1">Recuperar senha</h1>
-            <p className="muted">
-              {sent
-                ? 'Enviamos um link de recuperação para o seu e-mail.'
-                : 'Informe seu e-mail e enviaremos as instruções.'}
-            </p>
+      <div className="auth-form-wrap">
+        <div className="auth-form">
+          <h1 className="h1">{sent ? 'Verifique seu e-mail' : 'Recuperar senha'}</h1>
+          <div className="muted text-sm">
+            {sent
+              ? 'Enviamos um link para redefinir sua senha.'
+              : 'Te enviaremos um link de redefinição.'}
           </div>
-
-          {!sent && (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Field label="E-mail">
-                <Input
-                  type="email"
-                  placeholder="voce@empresa.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </Field>
-
-              <Button type="submit" variant="primary" disabled={loading}>
-                {loading ? 'Enviando…' : 'Enviar link'}
-              </Button>
-            </form>
-          )}
-
-          <p className="auth-footer-text">
-            <Link to="/login" className="link">
-              ← Voltar para o login
-            </Link>
-          </p>
+          <div className="auth-form-fields">
+            {!sent ? (
+              <>
+                <Field label="E-mail">
+                  <Input
+                    icon={<I.mail />}
+                    type="email"
+                    placeholder="voce@empresa.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </Field>
+                <Button variant="primary" size="lg" type="submit" disabled={loading} onClick={handleSubmit as unknown as React.MouseEventHandler}>
+                  {loading ? 'Enviando…' : 'Enviar link'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Card style={{ padding: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div className="empty-icon" style={{ margin: 0, width: 36, height: 36 }}>
+                    <I.mail />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>Link enviado</div>
+                    <div className="muted text-sm" style={{ marginTop: 2 }}>
+                      Verifique sua caixa de entrada e spam. O link expira em 1 hora.
+                    </div>
+                  </div>
+                </Card>
+                <Button variant="outline" onClick={() => setSent(false)}>
+                  Reenviar
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="auth-form-foot">
+            <Link to="/login">← Voltar para o login</Link>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

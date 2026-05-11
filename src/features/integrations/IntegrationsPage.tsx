@@ -17,7 +17,7 @@ export default function IntegrationsPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => api.maps.create(name),
+    mutationFn: (name: string) => api.maps.create({ name, type: 'public' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['maps'] })
       push({ title: 'Mapa criado', tone: 'success' })
@@ -52,15 +52,17 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
           <h1 className="h1">Integrações</h1>
-          <p className="muted text-sm">Gere embeds públicos do seu mapa de parceiros</p>
+          <div className="muted text-sm">Gere embeds públicos do seu mapa de parceiros</div>
         </div>
-        <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={() => setCreateOpen(true)}>
-          Novo embed
-        </Button>
+        <div className="page-actions">
+          <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={() => setCreateOpen(true)}>
+            Novo embed
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

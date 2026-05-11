@@ -12,9 +12,10 @@ function ProfileTab() {
   const [loading, setLoading] = useState(false)
 
   const save = async () => {
+    if (!user?.id) return
     setLoading(true)
     try {
-      await api.settings.updateProfile({ name })
+      await api.users.update(user.id, { name })
       await refreshUser()
       push({ title: 'Perfil atualizado', tone: 'success' })
     } catch {
@@ -27,7 +28,7 @@ function ProfileTab() {
   return (
     <Card>
       <CardHeader title="Perfil" desc="Informações da sua conta" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
+      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Field label="Nome">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
@@ -52,13 +53,10 @@ function SecurityTab() {
   const [code, setCode] = useState('')
   const [disableCode, setDisableCode] = useState('')
   const [disableOpen, setDisableOpen] = useState(false)
-  const [oldPw, setOldPw] = useState('')
-  const [newPw, setNewPw] = useState('')
-  const [pwLoading, setPwLoading] = useState(false)
 
   const openSetup = async () => {
     try {
-      const data = await api.settings.setup2fa()
+      const data = await api.auth.setup2fa()
       setQrData(data)
       setSetupOpen(true)
     } catch {
@@ -69,7 +67,7 @@ function SecurityTab() {
   const confirmSetup = async () => {
     if (code.length < 6) return
     try {
-      await api.settings.verify2fa(code)
+      await api.auth.verify2fa(code)
       await refreshUser()
       push({ title: '2FA ativado!', tone: 'success' })
       setSetupOpen(false)
@@ -83,7 +81,7 @@ function SecurityTab() {
   const confirmDisable = async () => {
     if (disableCode.length < 6) return
     try {
-      await api.settings.disable2fa(disableCode)
+      await api.auth.disable2fa(disableCode)
       await refreshUser()
       push({ title: '2FA desativado', tone: 'success' })
       setDisableOpen(false)
@@ -93,32 +91,19 @@ function SecurityTab() {
     }
   }
 
-  const changePassword = async () => {
-    if (!oldPw || !newPw) return
-    setPwLoading(true)
-    try {
-      await api.settings.changePassword(oldPw, newPw)
-      push({ title: 'Senha alterada', tone: 'success' })
-      setOldPw('')
-      setNewPw('')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao alterar senha'
-      push({ title: 'Erro', desc: msg, tone: 'error' })
-    } finally {
-      setPwLoading(false)
-    }
-  }
-
   return (
     <>
       <Card>
-        <CardHeader title="Autenticação em dois fatores" desc="Adicione uma camada extra de segurança à sua conta" />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
+        <CardHeader
+          title="Autenticação em dois fatores"
+          desc="Adicione uma camada extra de segurança à sua conta"
+        />
+        <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontWeight: 500 }}>
               {user?.twoFactorEnabled ? '2FA ativado' : '2FA desativado'}
             </div>
-            <div className="muted text-sm">
+            <div className="muted text-sm" style={{ marginTop: 2 }}>
               {user?.twoFactorEnabled
                 ? 'Sua conta está protegida com autenticação de dois fatores.'
                 : 'Ative o 2FA para aumentar a segurança da sua conta.'}
@@ -126,31 +111,14 @@ function SecurityTab() {
           </div>
           <Button
             variant={user?.twoFactorEnabled ? 'danger' : 'primary'}
-            onClick={() => user?.twoFactorEnabled ? setDisableOpen(true) : openSetup()}
+            onClick={() => (user?.twoFactorEnabled ? setDisableOpen(true) : openSetup())}
           >
             {user?.twoFactorEnabled ? 'Desativar 2FA' : 'Ativar 2FA'}
           </Button>
         </div>
       </Card>
 
-      <Card style={{ marginTop: 16 }}>
-        <CardHeader title="Alterar senha" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
-          <Field label="Senha atual">
-            <Input type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} placeholder="••••••••" />
-          </Field>
-          <Field label="Nova senha">
-            <Input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Mínimo 8 caracteres" minLength={8} />
-          </Field>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="primary" onClick={changePassword} disabled={pwLoading || !oldPw || !newPw}>
-              {pwLoading ? 'Salvando…' : 'Alterar senha'}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* 2FA setup modal */}
+      {/* Setup 2FA modal */}
       <Modal
         open={setupOpen}
         onClose={() => { setSetupOpen(false); setCode(''); setQrData(null) }}
@@ -213,13 +181,17 @@ function WorkspaceTab() {
     queryFn: () => api.settings.get(),
   })
   const [mapsKey, setMapsKey] = useState('')
+  const [publicMap, setPublicMap] = useState(false)
 
   useEffect(() => {
-    if (settings) setMapsKey(settings.mapsKey ?? '')
+    if (settings) {
+      setMapsKey(settings.googleMapsApiKey ?? '')
+      setPublicMap(settings.publicMapEnabled ?? false)
+    }
   }, [settings])
 
   const mutation = useMutation({
-    mutationFn: () => api.settings.update({ mapsKey }),
+    mutationFn: () => api.settings.update({ googleMapsApiKey: mapsKey, publicMapEnabled: publicMap }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['settings'] })
       push({ title: 'Configurações salvas', tone: 'success' })
@@ -232,7 +204,7 @@ function WorkspaceTab() {
   return (
     <Card>
       <CardHeader title="Configurações do workspace" desc="Personalize as configurações da sua empresa" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
+      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Field
           label="Google Maps API Key"
           hint="Necessária para exibir o mapa interativo de parceiros"
@@ -258,10 +230,12 @@ export default function SettingsPage() {
   const tab = searchParams.get('tab') ?? 'profile'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <h1 className="h1">Configurações</h1>
-        <p className="muted text-sm">Gerencie sua conta e preferências do workspace</p>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
+          <h1 className="h1">Configurações</h1>
+          <div className="muted text-sm">Gerencie sua conta e preferências do workspace</div>
+        </div>
       </div>
 
       <Tabs
@@ -274,11 +248,9 @@ export default function SettingsPage() {
         ]}
       />
 
-      <div>
-        {tab === 'profile' && <ProfileTab />}
-        {tab === 'security' && <SecurityTab />}
-        {tab === 'workspace' && <WorkspaceTab />}
-      </div>
+      {tab === 'profile' && <ProfileTab />}
+      {tab === 'security' && <SecurityTab />}
+      {tab === 'workspace' && <WorkspaceTab />}
     </div>
   )
 }

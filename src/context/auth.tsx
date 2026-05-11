@@ -6,10 +6,11 @@ interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string, totpCode?: string) => Promise<{
+  login: (email: string, password: string) => Promise<{
     requiresTwoFactor?: boolean
     tempToken?: string
   }>
+  loginWithTotp: (tempToken: string, code: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -40,17 +41,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser().finally(() => setIsLoading(false))
   }, [refreshUser])
 
-  const login = useCallback(async (email: string, password: string, totpCode?: string) => {
-    const result = await api.auth.login(email, password, totpCode)
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await api.auth.login(email, password)
     if (result.accessToken) {
-      const me = await api.auth.me()
-      setUser(me)
+      await refreshUser()
     }
     return {
       requiresTwoFactor: result.requiresTwoFactor,
       tempToken: result.tempToken,
     }
-  }, [])
+  }, [refreshUser])
+
+  const loginWithTotp = useCallback(async (tempToken: string, code: string) => {
+    await api.auth.loginWithTotp(tempToken, code)
+    await refreshUser()
+  }, [refreshUser])
 
   const logout = useCallback(async () => {
     await api.auth.logout()
@@ -64,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithTotp,
         logout,
         refreshUser,
       }}

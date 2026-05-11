@@ -1,17 +1,38 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Button, Card, CardHeader, Field, Select, useToast } from '../../components/ui'
+import { Button, Card, CardHeader, Checkbox, Field, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
 export default function ExportPage() {
   const { push } = useToast()
   const [format, setFormat] = useState('xlsx')
   const [loading, setLoading] = useState(false)
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([])
+
+  const { data: columns, isLoading: columnsLoading } = useQuery({
+    queryKey: ['exportColumns'],
+    queryFn: async () => {
+      const cols = await api.export.getColumns()
+      setSelectedColumns(cols)
+      return cols
+    },
+  })
+
+  const toggleColumn = (col: string) => {
+    setSelectedColumns((prev) =>
+      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col],
+    )
+  }
 
   const handleExport = async () => {
+    if (!selectedColumns.length) {
+      push({ title: 'Selecione pelo menos uma coluna', tone: 'error' })
+      return
+    }
     setLoading(true)
     try {
-      const blob = await api.export.download(format)
+      const blob = await api.export.download(selectedColumns, format as 'xlsx' | 'csv')
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -28,16 +49,18 @@ export default function ExportPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <h1 className="h1">Exportar dados</h1>
-        <p className="muted text-sm">Baixe todos os seus parceiros em diferentes formatos</p>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
+          <h1 className="h1">Exportar dados</h1>
+          <div className="muted text-sm">Baixe todos os seus parceiros em diferentes formatos</div>
+        </div>
       </div>
 
-      <Card style={{ maxWidth: 480 }}>
+      <Card style={{ maxWidth: 520 }}>
         <CardHeader
           title="Exportar parceiros"
-          desc="Todos os campos serão incluídos na exportação"
+          desc="Selecione as colunas que deseja incluir na exportação"
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 20 }}>
@@ -48,29 +71,31 @@ export default function ExportPage() {
             </Select>
           </Field>
 
-          <div
-            style={{
-              padding: 16,
-              background: 'var(--bg-subtle)',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              display: 'flex',
-              gap: 12,
-              alignItems: 'flex-start',
-            }}
-          >
-            <I.info size={16} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 2 }} />
-            <div className="text-sm muted">
-              A exportação inclui: nome, e-mail, telefone, endereço, coordenadas, tipo de pin e status
-              de todos os parceiros do seu workspace.
-            </div>
-          </div>
+          <Field label="Colunas">
+            {columnsLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[...Array(4)].map((_, i) => <Skeleton key={i} h={24} />)}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {columns?.map((col) => (
+                  <label key={col} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <Checkbox
+                      checked={selectedColumns.includes(col)}
+                      onChange={() => toggleColumn(col)}
+                    />
+                    <span className="text-sm">{col}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </Field>
 
           <Button
             variant="primary"
             leftIcon={<I.download size={14} />}
             onClick={handleExport}
-            disabled={loading}
+            disabled={loading || !selectedColumns.length}
           >
             {loading ? 'Exportando…' : `Exportar como ${format.toUpperCase()}`}
           </Button>

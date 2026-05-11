@@ -46,55 +46,72 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="auth-layout">
+    <div className="auth-page">
       <AuthAside />
-      <main className="auth-main">
-        <div className="auth-card" style={{ textAlign: 'center' }}>
+      <div className="auth-form-wrap">
+        <div className="auth-form" style={{ textAlign: 'center' }}>
           {status === 'verifying' && (
             <>
-              <div className="skel" style={{ width: 48, height: 48, borderRadius: 24, margin: '0 auto 16px' }} />
+              <div className="skel" style={{ width: 56, height: 56, borderRadius: 14, margin: '0 auto 16px' }} />
               <h1 className="h1">Verificando…</h1>
             </>
           )}
+
           {status === 'success' && (
             <>
-              <div style={{ color: 'var(--success)', marginBottom: 16 }}><I.check size={48} /></div>
+              <div style={{ margin: '0 auto 16px', width: 56, height: 56, borderRadius: 14, background: 'var(--success-soft)', color: 'var(--success)', display: 'grid', placeItems: 'center' }}>
+                <I.check size={28} />
+              </div>
               <h1 className="h1">E-mail verificado!</h1>
-              <p className="muted">Redirecionando para o login…</p>
+              <div className="muted text-sm" style={{ marginTop: 6 }}>Redirecionando para o login…</div>
             </>
           )}
+
           {status === 'error' && (
             <>
-              <div style={{ color: 'var(--danger)', marginBottom: 16 }}><I.alert size={48} /></div>
+              <div style={{ margin: '0 auto 16px', width: 56, height: 56, borderRadius: 14, background: 'var(--danger-soft)', color: 'var(--danger)', display: 'grid', placeItems: 'center' }}>
+                <I.alert size={28} />
+              </div>
               <h1 className="h1">Link inválido</h1>
-              <p className="muted">O link expirou ou já foi utilizado.</p>
+              <div className="muted text-sm" style={{ marginTop: 6 }}>O link expirou ou já foi utilizado.</div>
               {email && (
-                <Button variant="primary" onClick={resend} disabled={resending} style={{ marginTop: 16 }}>
-                  {resending ? 'Reenviando…' : 'Reenviar e-mail'}
-                </Button>
+                <div className="auth-form-fields" style={{ marginTop: 20 }}>
+                  <Button variant="primary" size="lg" onClick={resend} disabled={resending}>
+                    {resending ? 'Reenviando…' : 'Reenviar e-mail'}
+                  </Button>
+                </div>
               )}
             </>
           )}
+
           {status === 'idle' && (
             <>
-              <div style={{ color: 'var(--amber)', marginBottom: 16 }}><I.mail size={48} /></div>
-              <h1 className="h1">Verifique seu e-mail</h1>
-              <p className="muted">
-                Enviamos um link de confirmação para <strong>{email}</strong>. Clique nele para ativar sua
-                conta.
-              </p>
-              {email && (
-                <Button variant="ghost" onClick={resend} disabled={resending} style={{ marginTop: 16 }}>
-                  {resending ? 'Reenviando…' : 'Reenviar e-mail'}
+              <div style={{ margin: '0 auto 16px', width: 56, height: 56, borderRadius: 14, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center' }}>
+                <I.mail size={24} />
+              </div>
+              <h1 className="h1">Confirme seu e-mail</h1>
+              <div className="muted text-sm" style={{ marginTop: 6 }}>
+                Enviamos um link de confirmação para{' '}
+                <span className="mono" style={{ color: 'var(--fg)' }}>{email}</span>
+              </div>
+              <div className="auth-form-fields" style={{ marginTop: 20 }}>
+                <Button variant="primary" size="lg" onClick={() => navigate('/onboarding')}>
+                  Já confirmei, continuar
                 </Button>
-              )}
+                {email && (
+                  <Button variant="ghost" onClick={resend} disabled={resending}>
+                    {resending ? 'Reenviando…' : 'Reenviar e-mail'}
+                  </Button>
+                )}
+              </div>
             </>
           )}
-          <p className="auth-footer-text" style={{ marginTop: 24 }}>
-            <Link to="/login" className="link">← Voltar para o login</Link>
-          </p>
+
+          <div className="auth-form-foot" style={{ marginTop: 24 }}>
+            <Link to="/login">← Voltar para o login</Link>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

@@ -2,21 +2,25 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import type { Partner } from '../../types'
-import { Badge, Button, Empty, Input, Skeleton, useToast } from '../../components/ui'
+import { Badge, Button, Empty, Input, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import PartnerSheet from './PartnerSheet'
 
 export default function PartnersPage() {
   const qc = useQueryClient()
   const { push } = useToast()
-  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [visibility, setVisibility] = useState<'public' | 'internal' | ''>('')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Partner | null>(null)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['partners', page, search],
-    queryFn: () => api.partners.list({ page, limit: 20, search: search || undefined }),
+    queryKey: ['partners', page, visibility],
+    queryFn: () => api.partners.list({
+      page,
+      limit: 20,
+      visibility: visibility || undefined,
+    }),
   })
 
   const deleteMutation = useMutation({
@@ -46,27 +50,31 @@ export default function PartnersPage() {
   const totalPages = data ? Math.ceil(data.total / 20) : 1
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
           <h1 className="h1">Parceiros</h1>
-          <p className="muted text-sm">
+          <div className="muted text-sm">
             {data?.total ?? 0} parceiro{data?.total !== 1 ? 's' : ''} cadastrado{data?.total !== 1 ? 's' : ''}
-          </p>
+          </div>
         </div>
-        <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={openNew}>
-          Novo parceiro
-        </Button>
+        <div className="page-actions">
+          <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={openNew}>
+            Novo parceiro
+          </Button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <Input
-          icon={<I.search size={14} />}
-          placeholder="Buscar parceiros…"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          style={{ maxWidth: 320 }}
-        />
+        <Select
+          value={visibility}
+          onChange={(e) => { setVisibility(e.target.value as typeof visibility); setPage(1) }}
+          style={{ width: 160 }}
+        >
+          <option value="">Todos</option>
+          <option value="public">Público</option>
+          <option value="internal">Interno</option>
+        </Select>
       </div>
 
       {isLoading ? (
@@ -77,8 +85,8 @@ export default function PartnersPage() {
         <Empty
           icon={<I.partners size={32} />}
           title="Nenhum parceiro encontrado"
-          desc={search ? 'Tente outros termos de busca' : 'Adicione seu primeiro parceiro para começar'}
-          action={!search && <Button variant="primary" onClick={openNew}>Novo parceiro</Button>}
+          desc="Adicione seu primeiro parceiro para começar"
+          action={<Button variant="primary" onClick={openNew}>Novo parceiro</Button>}
         />
       ) : (
         <>
@@ -86,10 +94,11 @@ export default function PartnersPage() {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>E-mail</th>
+                <th>Endereço</th>
                 <th>Cidade / Estado</th>
                 <th>Tipo de pin</th>
-                <th>Status</th>
+                <th>Visibilidade</th>
+                <th>Geocode</th>
                 <th style={{ width: 80 }} />
               </tr>
             </thead>
@@ -99,7 +108,7 @@ export default function PartnersPage() {
                   <td>
                     <span style={{ fontWeight: 500 }}>{p.name}</span>
                   </td>
-                  <td className="muted">{p.email ?? '—'}</td>
+                  <td className="muted">{p.address ?? '—'}</td>
                   <td className="muted">
                     {[p.city, p.state].filter(Boolean).join(' / ') || '—'}
                   </td>
@@ -113,8 +122,16 @@ export default function PartnersPage() {
                     )}
                   </td>
                   <td>
-                    <Badge tone={p.active ? 'success' : 'warning'} dot>
-                      {p.active ? 'Ativo' : 'Inativo'}
+                    <Badge tone={p.visibility === 'public' ? 'success' : 'info'}>
+                      {p.visibility === 'public' ? 'Público' : 'Interno'}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Badge
+                      tone={p.geocodeStatus === 'done' ? 'success' : p.geocodeStatus === 'failed' ? 'danger' : 'warning'}
+                      dot
+                    >
+                      {p.geocodeStatus ?? 'pending'}
                     </Badge>
                   </td>
                   <td>

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Badge, Button, Card, CardHeader, Empty, Progress, Skeleton, useToast } from '../../components/ui'
+import { Badge, Button, Card, CardHeader, Empty, Progress, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
 function formatBytes(bytes: number) {
@@ -23,11 +23,12 @@ export default function ImportPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [mode, setMode] = useState<'full' | 'incremental'>('full')
 
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['importJobs'],
-    queryFn: () => api.importJobs.list(),
+    queryFn: () => api.import.list(),
     refetchInterval: 5000,
   })
 
@@ -38,33 +39,42 @@ export default function ImportPage() {
         return
       }
       setUploading(true)
-      setProgress(0)
+      setUploadProgress(0)
       try {
-        const eventSource = await api.importJobs.upload(file, (pct) => setProgress(pct))
-        if (eventSource) {
-          eventSource.onmessage = (e) => {
-            const data = JSON.parse(e.data)
-            if (data.status === 'done' || data.status === 'failed') {
-              eventSource.close()
-              qc.invalidateQueries({ queryKey: ['importJobs'] })
-              push({
-                title: data.status === 'done' ? 'Importação concluída' : 'Importação falhou',
-                desc: data.status === 'done' ? `${data.imported} parceiros importados` : data.error,
-                tone: data.status === 'done' ? 'success' : 'error',
-              })
-            }
+        const result = await api.import.upload(file, mode, (pct) => setUploadProgress(pct))
+        const { jobId } = result
+
+        qc.invalidateQueries({ queryKey: ['importJobs'] })
+
+        const url = api.import.progressUrl(jobId)
+        const es = new EventSource(url)
+        es.onmessage = (e) => {
+          const data = JSON.parse(e.data)
+          if (data.status === 'done' || data.status === 'failed') {
+            es.close()
+            qc.invalidateQueries({ queryKey: ['importJobs'] })
+            push({
+              title: data.status === 'done' ? 'Importação concluída' : 'Importação falhou',
+              desc: data.status === 'done'
+                ? `${data.created ?? 0} criados · ${data.updated ?? 0} atualizados`
+                : undefined,
+              tone: data.status === 'done' ? 'success' : 'error',
+            })
           }
+        }
+        es.onerror = () => {
+          es.close()
+          qc.invalidateQueries({ queryKey: ['importJobs'] })
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Erro ao importar'
         push({ title: 'Erro', desc: msg, tone: 'error' })
       } finally {
         setUploading(false)
-        setProgress(0)
-        qc.invalidateQueries({ queryKey: ['importJobs'] })
+        setUploadProgress(0)
       }
     },
-    [push, qc],
+    [push, qc, mode],
   )
 
   const onDrop = (e: React.DragEvent) => {
@@ -81,10 +91,18 @@ export default function ImportPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <h1 className="h1">Importar planilha</h1>
-        <p className="muted text-sm">Importe parceiros em massa a partir de arquivos Excel ou CSV</p>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
+          <h1 className="h1">Importar planilha</h1>
+          <div className="muted text-sm">Importe parceiros em massa a partir de arquivos Excel ou CSV</div>
+        </div>
+        <div className="page-actions">
+          <Select value={mode} onChange={(e) => setMode(e.target.value as 'full' | 'incremental')} style={{ width: 160 }}>
+            <option value="full">Substituição total</option>
+            <option value="incremental">Incremental</option>
+          </Select>
+        </div>
       </div>
 
       <Card>
@@ -104,10 +122,10 @@ export default function ImportPage() {
           />
           {uploading ? (
             <div style={{ width: '100%', maxWidth: 320, textAlign: 'center' }}>
-              <div style={{ marginBottom: 12, color: 'var(--amber)' }}><I.upload size={32} /></div>
+              <div style={{ marginBottom: 12, color: 'var(--accent)' }}><I.upload size={32} /></div>
               <div style={{ marginBottom: 8, fontWeight: 500 }}>Enviando…</div>
-              <Progress value={progress} />
-              <div className="muted text-sm" style={{ marginTop: 8 }}>{progress}%</div>
+              <Progress value={uploadProgress} />
+              <div className="muted text-sm" style={{ marginTop: 8 }}>{uploadProgress}%</div>
             </div>
           ) : (
             <>
@@ -145,7 +163,9 @@ export default function ImportPage() {
               <tr>
                 <th>Arquivo</th>
                 <th>Tamanho</th>
-                <th>Importados</th>
+                <th>Modo</th>
+                <th>Criados</th>
+                <th>Atualizados</th>
                 <th>Erros</th>
                 <th>Status</th>
                 <th>Data</th>
@@ -156,9 +176,11 @@ export default function ImportPage() {
                 <tr key={j.id}>
                   <td style={{ fontWeight: 500 }}>{j.fileName}</td>
                   <td className="muted">{formatBytes(j.fileSize)}</td>
-                  <td>{j.importedCount ?? '—'}</td>
-                  <td style={{ color: j.errorCount ? 'var(--danger)' : 'inherit' }}>
-                    {j.errorCount ?? '—'}
+                  <td className="muted">{j.mode === 'full' ? 'Total' : 'Incremental'}</td>
+                  <td>{j.created ?? '—'}</td>
+                  <td>{j.updated ?? '—'}</td>
+                  <td style={{ color: j.failed ? 'var(--danger)' : 'inherit' }}>
+                    {j.failed ?? '—'}
                   </td>
                   <td>
                     <Badge tone={statusTone(j.status)}>{j.status}</Badge>

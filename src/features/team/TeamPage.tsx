@@ -23,6 +23,7 @@ export default function TeamPage() {
   const { user } = useAuth()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState('employee')
 
   const { data: members, isLoading } = useQuery({
@@ -31,12 +32,13 @@ export default function TeamPage() {
   })
 
   const inviteMutation = useMutation({
-    mutationFn: () => api.team.invite(inviteEmail, inviteRole),
+    mutationFn: () => api.team.invite(inviteEmail, inviteName, inviteRole as 'admin' | 'employee'),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['team'] })
       push({ title: 'Convite enviado', desc: `E-mail enviado para ${inviteEmail}`, tone: 'success' })
       setInviteOpen(false)
       setInviteEmail('')
+      setInviteName('')
       setInviteRole('employee')
     },
     onError: (err: Error) => push({ title: 'Erro ao convidar', desc: err.message, tone: 'error' }),
@@ -57,17 +59,19 @@ export default function TeamPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
           <h1 className="h1">Equipe</h1>
-          <p className="muted text-sm">
+          <div className="muted text-sm">
             {members?.length ?? 0} membro{members?.length !== 1 ? 's' : ''} no workspace
-          </p>
+          </div>
         </div>
-        <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={() => setInviteOpen(true)}>
-          Convidar membro
-        </Button>
+        <div className="page-actions">
+          <Button variant="primary" leftIcon={<I.plus size={14} />} onClick={() => setInviteOpen(true)}>
+            Convidar membro
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -160,7 +164,7 @@ export default function TeamPage() {
 
       <Modal
         open={inviteOpen}
-        onClose={() => { setInviteOpen(false); setInviteEmail(''); setInviteRole('employee') }}
+        onClose={() => { setInviteOpen(false); setInviteEmail(''); setInviteName(''); setInviteRole('employee') }}
         title="Convidar membro"
         desc="O convite será enviado por e-mail"
         footer={
@@ -168,7 +172,7 @@ export default function TeamPage() {
             <Button variant="ghost" onClick={() => setInviteOpen(false)}>Cancelar</Button>
             <Button
               variant="primary"
-              disabled={!inviteEmail || inviteMutation.isPending}
+              disabled={!inviteEmail || !inviteName || inviteMutation.isPending}
               onClick={() => inviteMutation.mutate()}
             >
               {inviteMutation.isPending ? 'Enviando…' : 'Enviar convite'}
@@ -177,13 +181,20 @@ export default function TeamPage() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Nome">
+            <Input
+              placeholder="Nome do colaborador"
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+              autoFocus
+            />
+          </Field>
           <Field label="E-mail">
             <Input
               type="email"
               placeholder="colaborador@empresa.com"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              autoFocus
             />
           </Field>
           <Field label="Função">

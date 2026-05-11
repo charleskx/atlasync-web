@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   AuthTokens,
   ImportJob,
+  ImportUploadResponse,
   ListPartnersInput,
   LoginResponse,
   MapEntity,
@@ -80,37 +81,56 @@ function storeTokens(tokens: AuthTokens) {
   localStorage.setItem('refreshToken', tokens.refreshToken)
 }
 
+function decodeJwtSub(token: string): string | null {
+  try {
+    return JSON.parse(atob(token.split('.')[1])).sub as string
+  } catch {
+    return null
+  }
+}
+
 export const api = {
   auth: {
-    async login(email: string, password: string, totpCode?: string): Promise<LoginResponse> {
-      const { data } = await http.post<LoginResponse>('/auth/login', { email, password, totpCode })
+    async login(email: string, password: string): Promise<LoginResponse> {
+      const { data } = await http.post<LoginResponse>('/auth/login', { email, password })
       if (data.accessToken && data.refreshToken) {
         storeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
       }
       return data
     },
+
     async loginWithTotp(tempToken: string, code: string): Promise<AuthTokens> {
       const { data } = await http.post<AuthTokens>('/auth/2fa/login', { tempToken, code })
       storeTokens(data)
       return data
     },
-    async register(name: string, email: string, password: string, company: string) {
-      const { data } = await http.post('/auth/register', { name, email, password, company })
+
+    async register(name: string, email: string, password: string, tenantName: string) {
+      const { data } = await http.post('/auth/register', { name, email, password, tenantName })
       return data
     },
+
     async forgotPassword(email: string) {
       await http.post('/auth/forgot-password', { email })
     },
+
+    async resetPassword(token: string, password: string) {
+      await http.post('/auth/reset-password', { token, password })
+    },
+
     async verifyEmail(token: string) {
-      await http.get(`/auth/verify-email?token=${token}`)
+      await http.get(`/auth/verify`, { params: { token } })
     },
-    async resendVerification(email: string) {
-      await http.post('/auth/resend-verification', { email })
-    },
+
     async me(): Promise<User> {
-      const { data } = await http.get<User>('/auth/me')
+      const token = localStorage.getItem('accessToken')
+      if (!token) throw new Error('No token')
+      const userId = decodeJwtSub(token)
+      if (!userId) throw new Error('Invalid token')
+      const { data } = await http.get<User>(`/users/${userId}`)
       return data
     },
+
     async logout() {
       const refreshToken = localStorage.getItem('refreshToken')
       try {
@@ -119,22 +139,73 @@ export const api = {
         clearTokens()
       }
     },
+
+    async setup2fa(): Promise<{ qrCode: string; secret: string }> {
+      const { data } = await http.post<{ qrCode: string; secret: string }>('/auth/2fa/setup')
+      return data
+    },
+
+    async verify2fa(code: string): Promise<{ success: true }> {
+      const { data } = await http.post<{ success: true }>('/auth/2fa/verify', { code })
+      return data
+    },
+
+    async disable2fa(code: string) {
+      await http.delete('/auth/2fa', { data: { code } })
+    },
+  },
+
+  users: {
+    async list(): Promise<User[]> {
+      const { data } = await http.get<User[]>('/users/')
+      return data
+    },
+    async getById(id: string): Promise<User> {
+      const { data } = await http.get<User>(`/users/${id}`)
+      return data
+    },
+    async update(id: string, payload: { name?: string; role?: string }): Promise<User> {
+      const { data } = await http.patch<User>(`/users/${id}`, payload)
+      return data
+    },
+    async invite(email: string, name: string, role: 'admin' | 'employee'): Promise<User> {
+      const { data } = await http.post<User>('/users/invite', { email, name, role })
+      return data
+    },
+    async remove(id: string) {
+      await http.delete(`/users/${id}`)
+    },
   },
 
   partners: {
     async list(params?: ListPartnersInput): Promise<PaginatedResponse<Partner>> {
-      const { data } = await http.get<PaginatedResponse<Partner>>('/partners', { params })
+      const { data } = await http.get<PaginatedResponse<Partner>>('/partners/', { params })
       return data
     },
     async getById(id: string): Promise<Partner> {
       const { data } = await http.get<Partner>(`/partners/${id}`)
       return data
     },
-    async create(payload: Partial<Partner>): Promise<Partner> {
-      const { data } = await http.post<Partner>('/partners', payload)
+    async create(payload: {
+      name: string
+      address: string
+      pinTypeId?: string
+      visibility?: 'public' | 'internal'
+      dynamicValues?: Record<string, string>
+    }): Promise<Partner> {
+      const { data } = await http.post<Partner>('/partners/', payload)
       return data
     },
-    async update(id: string, payload: Partial<Partner>): Promise<Partner> {
+    async update(
+      id: string,
+      payload: {
+        name?: string
+        address?: string
+        pinTypeId?: string | null
+        visibility?: 'public' | 'internal'
+        dynamicValues?: Record<string, string>
+      },
+    ): Promise<Partner> {
       const { data } = await http.patch<Partner>(`/partners/${id}`, payload)
       return data
     },
@@ -142,21 +213,21 @@ export const api = {
       await http.delete(`/partners/${id}`)
     },
     async getColumns(): Promise<PartnerColumn[]> {
-      const { data } = await http.get<PartnerColumn[]>('/partners/columns')
-      return data
+      const { data } = await http.get<{ columns: PartnerColumn[] }>('/partners/columns')
+      return data.columns
     },
   },
 
   pinTypes: {
     async list(): Promise<PinType[]> {
-      const { data } = await http.get<PinType[]>('/pin-types')
+      const { data } = await http.get<PinType[]>('/pin-types/')
       return data
     },
     async create(payload: { name: string; color: string }): Promise<PinType> {
-      const { data } = await http.post<PinType>('/pin-types', payload)
+      const { data } = await http.post<PinType>('/pin-types/', payload)
       return data
     },
-    async update(id: string, payload: Partial<PinType>): Promise<PinType> {
+    async update(id: string, payload: { name?: string; color?: string }): Promise<PinType> {
       const { data } = await http.patch<PinType>(`/pin-types/${id}`, payload)
       return data
     },
@@ -165,30 +236,95 @@ export const api = {
     },
   },
 
-  importJobs: {
-    async list(): Promise<ImportJob[]> {
-      const { data } = await http.get<ImportJob[]>('/import')
+  maps: {
+    async list(): Promise<MapEntity[]> {
+      const { data } = await http.get<MapEntity[]>('/maps/')
       return data
     },
-    async getById(id: string): Promise<ImportJob> {
-      const { data } = await http.get<ImportJob>(`/import/${id}`)
+    async getById(id: string): Promise<MapEntity> {
+      const { data } = await http.get<MapEntity>(`/maps/${id}`)
       return data
     },
-    async upload(file: File, onProgress?: (pct: number) => void): Promise<EventSource | null> {
+    async create(payload: {
+      name: string
+      type: 'internal' | 'public'
+      filters?: Record<string, unknown>
+    }): Promise<MapEntity> {
+      const { data } = await http.post<MapEntity>('/maps/', payload)
+      return data
+    },
+    async update(
+      id: string,
+      payload: { name?: string; filters?: Record<string, unknown>; active?: boolean },
+    ): Promise<MapEntity> {
+      const { data } = await http.patch<MapEntity>(`/maps/${id}`, payload)
+      return data
+    },
+    async delete(id: string) {
+      await http.delete(`/maps/${id}`)
+    },
+    async pins(
+      mapId: string,
+      filters?: {
+        city?: string
+        state?: string
+        visibility?: 'public' | 'internal'
+        pinTypeId?: string
+        geocodeStatus?: 'pending' | 'done' | 'failed'
+      },
+    ): Promise<MapPin[]> {
+      const { data } = await http.get<MapPin[]>(`/maps/${mapId}/pins`, { params: filters })
+      return data
+    },
+    async generateEmbedToken(mapId: string): Promise<{ embedToken: string }> {
+      const { data } = await http.post<{ embedToken: string }>(`/maps/${mapId}/embed-token`)
+      return data
+    },
+    async getEmbed(mapId: string, type: 'iframe' | 'script' = 'iframe'): Promise<{ snippet: string }> {
+      const { data } = await http.get<{ snippet: string }>(`/maps/${mapId}/embed`, {
+        params: { type },
+      })
+      return data
+    },
+    async publicPins(
+      token: string,
+      filters?: { city?: string; state?: string },
+    ): Promise<MapPin[]> {
+      const { data } = await axios.get<MapPin[]>(`${BASE_URL}/maps/public/${token}/pins`, {
+        params: filters,
+      })
+      return data
+    },
+    async publicLocalities(token: string): Promise<{ city: string; state: string }[]> {
+      const { data } = await axios.get(`${BASE_URL}/maps/public/${token}/localities`)
+      return data
+    },
+  },
+
+  import: {
+    async upload(
+      file: File,
+      mode: 'full' | 'incremental' = 'full',
+      onProgress?: (pct: number) => void,
+    ): Promise<ImportUploadResponse> {
       const formData = new FormData()
       formData.append('file', file)
-      const { data } = await http.post<ImportJob>('/import', formData, {
+      const { data } = await http.post<ImportUploadResponse>('/import/upload', formData, {
+        params: { mode },
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
         },
       })
-      if (data?.id) {
-        const token = localStorage.getItem('accessToken') ?? ''
-        const es = new EventSource(`${BASE_URL}/import/${data.id}/progress?token=${token}`)
-        return es
-      }
-      return null
+      return data
+    },
+    async list(): Promise<ImportJob[]> {
+      const { data } = await http.get<ImportJob[]>('/import/')
+      return data
+    },
+    async getById(id: string): Promise<ImportJob> {
+      const { data } = await http.get<ImportJob>(`/import/${id}`)
+      return data
     },
     progressUrl(id: string): string {
       const token = localStorage.getItem('accessToken') ?? ''
@@ -197,59 +333,17 @@ export const api = {
   },
 
   export: {
-    async download(format: string): Promise<Blob> {
+    async getColumns(): Promise<string[]> {
+      const { data } = await http.get<{ columns: string[] }>('/export/columns')
+      return data.columns
+    },
+    async download(columns: string[], format: 'xlsx' | 'csv' = 'xlsx'): Promise<Blob> {
       const { data } = await http.post(
-        '/export',
-        { format },
+        '/export/',
+        { columns, format },
         { responseType: 'blob' },
       )
       return data as Blob
-    },
-  },
-
-  maps: {
-    async list(): Promise<MapEntity[]> {
-      const { data } = await http.get<MapEntity[]>('/maps')
-      return data
-    },
-    async getById(id: string): Promise<MapEntity> {
-      const { data } = await http.get<MapEntity>(`/maps/${id}`)
-      return data
-    },
-    async create(name: string): Promise<MapEntity> {
-      const { data } = await http.post<MapEntity>('/maps', { name })
-      return data
-    },
-    async update(id: string, payload: Partial<MapEntity>): Promise<MapEntity> {
-      const { data } = await http.patch<MapEntity>(`/maps/${id}`, payload)
-      return data
-    },
-    async delete(id: string) {
-      await http.delete(`/maps/${id}`)
-    },
-    async pins(): Promise<MapPin[]> {
-      const { data } = await http.get<MapPin[]>('/maps/pins')
-      return data
-    },
-    async publicPins(token: string): Promise<{ map: MapEntity; pins: MapPin[]; mapsKey: string }> {
-      const { data } = await axios.get(`${BASE_URL}/maps/public/${token}`)
-      return data
-    },
-  },
-
-  team: {
-    async list(): Promise<User[]> {
-      const { data } = await http.get<User[]>('/users')
-      return data
-    },
-    async invite(email: string, role: string) {
-      await http.post('/users/invite', { email, role })
-    },
-    async remove(userId: string) {
-      await http.delete(`/users/${userId}`)
-    },
-    async updateRole(userId: string, role: string) {
-      await http.patch(`/users/${userId}`, { role })
     },
   },
 
@@ -258,7 +352,7 @@ export const api = {
       const { data } = await http.get<Subscription>('/billing/subscription')
       return data
     },
-    async checkout(plan: string): Promise<{ url: string }> {
+    async checkout(plan: 'monthly' | 'annual'): Promise<{ url: string }> {
       const { data } = await http.post<{ url: string }>('/billing/checkout', { plan })
       return data
     },
@@ -270,53 +364,57 @@ export const api = {
 
   settings: {
     async get(): Promise<TenantSettings> {
-      const { data } = await http.get<TenantSettings>('/settings')
+      const { data } = await http.get<TenantSettings>('/tenant/settings')
       return data
     },
     async update(payload: Partial<TenantSettings>): Promise<TenantSettings> {
-      const { data } = await http.patch<TenantSettings>('/settings', payload)
-      return data
-    },
-    async updateProfile(payload: { name: string }): Promise<User> {
-      const { data } = await http.patch<User>('/auth/me', payload)
-      return data
-    },
-    async changePassword(currentPassword: string, newPassword: string) {
-      await http.post('/auth/change-password', { currentPassword, newPassword })
-    },
-    async setup2fa(): Promise<{ qrCode: string; secret: string }> {
-      const { data } = await http.post<{ qrCode: string; secret: string }>('/auth/2fa/setup')
-      return data
-    },
-    async verify2fa(code: string): Promise<{ recoveryCodes: string[] }> {
-      const { data } = await http.post<{ recoveryCodes: string[] }>('/auth/2fa/verify', { code })
-      return data
-    },
-    async disable2fa(code: string) {
-      await http.delete('/auth/2fa', { data: { code } })
-    },
-    async getTenant(): Promise<Tenant> {
-      const { data } = await http.get<Tenant>('/tenants/me')
-      return data
-    },
-    async updateTenant(payload: Partial<Tenant>) {
-      const { data } = await http.patch('/tenants/me', payload)
+      const { data } = await http.put<TenantSettings>('/tenant/settings', payload)
       return data
     },
   },
 
-  superAdmin: {
-    async tenants(params?: { search?: string; page?: number }): Promise<PaginatedResponse<Tenant & { partnerCount: number; userCount: number; active: boolean }>> {
+  admin: {
+    async tenants(params?: {
+      search?: string
+      page?: number
+    }): Promise<PaginatedResponse<Tenant & { partnerCount: number; userCount: number }>> {
       const { data } = await http.get('/admin/tenants', { params })
       return data
     },
-    async users(params?: { search?: string; page?: number }): Promise<PaginatedResponse<User & { tenantName: string }>> {
-      const { data } = await http.get('/admin/users', { params })
+    async getTenant(id: string): Promise<Tenant> {
+      const { data } = await http.get<Tenant>(`/admin/tenants/${id}`)
       return data
     },
-    async impersonate(tenantId: string) {
-      const { data } = await http.post(`/admin/tenants/${tenantId}/impersonate`)
+    async blockTenant(id: string) {
+      await http.patch(`/admin/tenants/${id}/block`)
+    },
+    async unblockTenant(id: string) {
+      await http.patch(`/admin/tenants/${id}/unblock`)
+    },
+    async metrics(): Promise<unknown> {
+      const { data } = await http.get('/admin/metrics')
       return data
     },
+  },
+
+  // backward-compat aliases used by existing pages — remove when pages are updated
+  importJobs: {
+    list: () => api.import.list(),
+    getById: (id: string) => api.import.getById(id),
+    progressUrl: (id: string) => api.import.progressUrl(id),
+    upload: (file: File, onProgress?: (pct: number) => void) =>
+      api.import.upload(file, 'full', onProgress),
+  },
+
+  team: {
+    list: () => api.users.list(),
+    invite: (email: string, name: string, role: 'admin' | 'employee') =>
+      api.users.invite(email, name, role),
+    remove: (id: string) => api.users.remove(id),
+    updateRole: (id: string, role: string) => api.users.update(id, { role }),
+  },
+
+  superAdmin: {
+    tenants: (params?: { search?: string; page?: number }) => api.admin.tenants(params),
   },
 }

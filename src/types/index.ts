@@ -31,20 +31,17 @@ export interface Partner {
   id: string
   tenantId: string
   name: string
-  email?: string | null
-  phone?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
-  zipCode?: string | null
   lat?: number | null
   lng?: number | null
-  active: boolean
-  notes?: string | null
+  visibility: 'public' | 'internal'
   pinTypeId?: string | null
   pinTypeName?: string | null
   pinTypeColor?: string | null
   geocodeStatus?: 'pending' | 'done' | 'failed' | null
+  dynamicValues?: Record<string, string>
   createdAt: string
   updatedAt: string
 }
@@ -65,18 +62,42 @@ export interface ImportJob {
   status: 'pending' | 'processing' | 'done' | 'failed'
   fileName: string
   fileSize: number
-  importedCount?: number | null
-  errorCount?: number | null
+  mode: 'full' | 'incremental'
+  totalRows: number
+  processedRows: number
+  created: number
+  updated: number
+  removed: number
+  failed: number
+  parseErrors?: { row: number; message: string }[]
   createdAt: string
   finishedAt?: string | null
+}
+
+export interface ImportUploadResponse {
+  jobId: string
+  totalRows: number
+  parseErrors: { row: number; message: string }[]
+}
+
+export interface ImportProgress {
+  status: string
+  totalRows: number
+  processedRows: number
+  created: number
+  updated: number
+  removed: number
+  failed: number
 }
 
 export interface MapEntity {
   id: string
   tenantId: string
   name: string
+  type: 'internal' | 'public'
   token: string
   active: boolean
+  filters?: Record<string, unknown>
   createdAt: string
 }
 
@@ -88,8 +109,7 @@ export interface MapPin {
   lng?: number | null
   city?: string | null
   state?: string | null
-  email?: string | null
-  phone?: string | null
+  visibility?: 'public' | 'internal'
   pinTypeName?: string | null
   pinTypeColor?: string | null
 }
@@ -123,11 +143,15 @@ export interface PaginatedResponse<T> {
 export interface ListPartnersInput {
   page?: number
   limit?: number
-  search?: string
+  visibility?: 'public' | 'internal'
   pinTypeId?: string
+  geocodeStatus?: 'pending' | 'done' | 'failed'
 }
 
 export interface TenantSettings {
-  mapsKey?: string | null
+  googleMapsApiKey?: string | null
+  defaultMapZoom?: number | null
+  defaultMapLat?: number | null
+  defaultMapLng?: number | null
   publicMapEnabled?: boolean
 }

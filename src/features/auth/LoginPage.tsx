@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth'
-import { Button, Field, Input, useToast } from '../../components/ui'
+import { Button, Checkbox, Field, Input, useToast } from '../../components/ui'
+import { I } from '../../components/icons'
 import AuthAside from './AuthAside'
 
 export default function LoginPage() {
@@ -10,6 +11,8 @@ export default function LoginPage() {
   const { push } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -34,18 +37,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-layout">
+    <div className="auth-page">
       <AuthAside />
-      <main className="auth-main">
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1 className="h1">Bem-vindo de volta</h1>
-            <p className="muted">Entre com suas credenciais para acessar a plataforma.</p>
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label="E-mail" error={error ? ' ' : undefined}>
+      <div className="auth-form-wrap">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <h1 className="h1">Bem-vindo de volta</h1>
+          <div className="muted text-sm">Entre na sua conta Atlasync</div>
+          <div className="auth-form-fields">
+            <Field label="E-mail">
               <Input
+                icon={<I.mail />}
                 type="email"
                 placeholder="voce@empresa.com"
                 value={email}
@@ -54,37 +55,53 @@ export default function LoginPage() {
                 autoComplete="email"
               />
             </Field>
-
-            <Field label="Senha" error={error || undefined}>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
+            <Field
+              label={
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                  <span>Senha</span>
+                  <Link to="/forgot" style={{ color: 'var(--accent)', fontSize: 12 }}>
+                    Esqueci minha senha
+                  </Link>
+                </div>
+              }
+              error={error || undefined}
+            >
+              <div style={{ position: 'relative' }}>
+                <Input
+                  icon={<I.lock />}
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  style={{ paddingRight: 36 }}
+                />
+                <button
+                  type="button"
+                  className="icon-btn"
+                  style={{ position: 'absolute', right: 2, top: 2 }}
+                  onClick={() => setShowPw((s) => !s)}
+                >
+                  {showPw ? <I.eyeOff /> : <I.eye />}
+                </button>
+              </div>
             </Field>
-
-            <div style={{ textAlign: 'right' }}>
-              <Link to="/forgot" className="link" style={{ fontSize: 13 }}>
-                Esqueci minha senha
-              </Link>
-            </div>
-
-            <Button type="submit" variant="primary" disabled={loading}>
+            <Checkbox
+              checked={remember}
+              onChange={setRemember}
+              label={<span style={{ fontSize: 12.5 }} className="muted">Manter conectado por 30 dias</span>}
+            />
+            <Button variant="primary" size="lg" type="submit" disabled={loading}>
               {loading ? 'Entrando…' : 'Entrar'}
             </Button>
-          </form>
-
-          <p className="auth-footer-text">
-            Não tem conta?{' '}
-            <Link to="/register" className="link">
-              Criar conta grátis
-            </Link>
-          </p>
-        </div>
-      </main>
+          </div>
+          <div className="auth-form-foot">
+            Não tem uma conta?{' '}
+            <Link to="/register">Criar conta grátis</Link>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

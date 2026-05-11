@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/auth'
 import CommandPalette from './CommandPalette'
@@ -6,10 +6,10 @@ import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 
 const BREADCRUMB_MAP: Record<string, string[]> = {
-  '/dashboard': ['Dashboard'],
-  '/partners': ['Parceiros'],
-  '/map': ['Mapa'],
-  '/public-map': ['Mapa Público'],
+  '/dashboard': ['Workspace', 'Dashboard'],
+  '/partners': ['Workspace', 'Parceiros'],
+  '/map': ['Workspace', 'Mapa interno'],
+  '/public-map': ['Workspace', 'Mapa público'],
   '/import': ['Dados', 'Importar'],
   '/export': ['Dados', 'Exportar'],
   '/integrations': ['Dados', 'Integrações'],
@@ -25,11 +25,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
-  const mainRef = useRef<HTMLDivElement>(null)
 
   const path = location.pathname
   const breadcrumbs = BREADCRUMB_MAP[path] ?? [path.replace('/', '')]
   const active = path.replace('/', '')
+  const isFlush = path === '/map'
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -49,7 +49,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const trial = { daysLeft: 0 }
 
   return (
-    <div className="app-layout" data-collapsed={collapsed}>
+    <div
+      className="app-shell"
+      data-collapsed={collapsed}
+      data-mobile-open={mobileOpen}
+      data-fullscreen={isFlush}
+    >
       <Sidebar
         active={active}
         onNav={() => {}}
@@ -58,17 +63,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         onCloseMobile={() => setMobileOpen(false)}
         trial={trial}
       />
-      <div className="app-main">
-        <Topbar
-          onToggleSidebar={() => setCollapsed((c) => !c)}
-          onOpenMobile={() => setMobileOpen(true)}
-          breadcrumbs={breadcrumbs}
-          onCommand={() => setCmdOpen(true)}
-        />
-        <main ref={mainRef} className="page-content">
-          {children}
-        </main>
-      </div>
+      <Topbar
+        onToggleSidebar={() => setCollapsed((c) => !c)}
+        onOpenMobile={() => setMobileOpen(true)}
+        breadcrumbs={breadcrumbs}
+        onCommand={() => setCmdOpen(true)}
+      />
+      <main className="main">
+        {children}
+      </main>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   )

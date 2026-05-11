@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Badge, Button, Card } from '../../components/ui'
+import { Badge, Button, Card, Select } from '../../components/ui'
 import { I } from '../../components/icons'
 import type { MapPin } from '../../types'
 
@@ -48,12 +48,6 @@ function InfoPopup({ pin, onClose }: InfoPopupProps) {
       {pin.city && (
         <div className="muted text-sm">{[pin.city, pin.state].filter(Boolean).join(' / ')}</div>
       )}
-      {pin.email && (
-        <div style={{ marginTop: 8, fontSize: 13 }}>
-          <a href={`mailto:${pin.email}`} className="link">{pin.email}</a>
-        </div>
-      )}
-      {pin.phone && <div style={{ fontSize: 13, marginTop: 4 }}>{pin.phone}</div>}
       {pin.pinTypeName && (
         <Badge style={{ marginTop: 8, background: (pin.pinTypeColor ?? '#888') + '22', color: pin.pinTypeColor ?? undefined }}>
           {pin.pinTypeName}
@@ -70,24 +64,37 @@ export default function MapPage() {
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
   const [mapsReady, setMapsReady] = useState(false)
   const [mapsError, setMapsError] = useState(false)
+  const [selectedMapId, setSelectedMapId] = useState<string>('')
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => api.settings.get(),
   })
 
-  const { data: pins } = useQuery({
-    queryKey: ['mapPins'],
-    queryFn: () => api.maps.pins(),
-    enabled: mapsReady,
+  const { data: maps } = useQuery({
+    queryKey: ['maps'],
+    queryFn: () => api.maps.list(),
   })
 
   useEffect(() => {
-    if (!settings?.mapsKey) return
-    loadMapsScript(settings.mapsKey)
+    if (maps?.length && !selectedMapId) {
+      setSelectedMapId(maps[0].id)
+    }
+  }, [maps, selectedMapId])
+
+  const { data: pins } = useQuery({
+    queryKey: ['mapPins', selectedMapId],
+    queryFn: () => api.maps.pins(selectedMapId),
+    enabled: mapsReady && !!selectedMapId,
+  })
+
+  useEffect(() => {
+    const apiKey = settings?.googleMapsApiKey
+    if (!apiKey) return
+    loadMapsScript(apiKey)
       .then(() => setMapsReady(true))
       .catch(() => setMapsError(true))
-  }, [settings?.mapsKey])
+  }, [settings?.googleMapsApiKey])
 
   useEffect(() => {
     if (!mapsReady || !mapRef.current) return
@@ -120,20 +127,22 @@ export default function MapPage() {
     })
   }, [pins])
 
-  if (!settings?.mapsKey) {
+  if (!settings?.googleMapsApiKey) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div>
-          <h1 className="h1">Mapa interno</h1>
-          <p className="muted text-sm">Visualize seus parceiros no mapa</p>
+      <div className="page">
+        <div className="page-header">
+          <div className="page-title-block">
+            <h1 className="h1">Mapa interno</h1>
+            <div className="muted text-sm">Visualize seus parceiros no mapa</div>
+          </div>
         </div>
         <Card style={{ padding: 48, textAlign: 'center' }}>
-          <I.key size={32} style={{ color: 'var(--amber)', marginBottom: 16 }} />
+          <I.key size={32} style={{ color: 'var(--accent)', marginBottom: 16 }} />
           <div className="h2" style={{ marginBottom: 8 }}>Google Maps API Key necessária</div>
           <div className="muted text-sm" style={{ marginBottom: 24 }}>
             Configure sua API Key nas configurações do workspace para usar o mapa.
           </div>
-          <Button variant="primary" leftIcon={<I.settings size={14} />} onClick={() => window.location.href = '/settings'}>
+          <Button variant="primary" leftIcon={<I.settings size={14} />} onClick={() => window.location.href = '/settings?tab=workspace'}>
             Ir para Configurações
           </Button>
         </Card>
@@ -143,9 +152,13 @@ export default function MapPage() {
 
   if (mapsError) {
     return (
-      <div>
-        <h1 className="h1">Mapa interno</h1>
-        <Card style={{ padding: 48, textAlign: 'center', marginTop: 24 }}>
+      <div className="page">
+        <div className="page-header">
+          <div className="page-title-block">
+            <h1 className="h1">Mapa interno</h1>
+          </div>
+        </div>
+        <Card style={{ padding: 48, textAlign: 'center' }}>
           <I.alert size={32} style={{ color: 'var(--danger)', marginBottom: 16 }} />
           <div className="h2">Erro ao carregar o mapa</div>
           <div className="muted text-sm">Verifique sua Google Maps API Key nas configurações.</div>
@@ -155,12 +168,21 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+    <div className="page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className="page-header">
+        <div className="page-title-block">
           <h1 className="h1">Mapa interno</h1>
-          <p className="muted text-sm">{pins?.length ?? 0} parceiro{pins?.length !== 1 ? 's' : ''} no mapa</p>
+          <div className="muted text-sm">{pins?.length ?? 0} parceiro{pins?.length !== 1 ? 's' : ''} no mapa</div>
         </div>
+        {maps && maps.length > 1 && (
+          <div className="page-actions">
+            <Select value={selectedMapId} onChange={(e) => setSelectedMapId(e.target.value)} style={{ width: 200 }}>
+              {maps.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
       <div style={{ position: 'relative', flex: 1, minHeight: 500, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
