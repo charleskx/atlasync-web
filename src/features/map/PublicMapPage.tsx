@@ -482,14 +482,24 @@ export default function PublicMapPage() {
 
       {/* Header */}
       <div style={{ padding: '10px 16px', background: t.bg, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, boxShadow: t.shadowSm, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, color: t.accent }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" fill="currentColor" />
+        <a
+          href="https://atlasync.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Powered by Atlasync"
+          style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}
+        >
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: t.accent, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" fill="white" stroke="none" />
             </svg>
           </div>
-          {!isMobile && <span style={{ fontWeight: 700, fontSize: 14, color: t.fg, letterSpacing: '-0.01em' }}>atlasync</span>}
-        </div>
+          {!isMobile && (
+            <span style={{ fontSize: 11, color: t.fgMuted, letterSpacing: '0.01em' }}>
+              Powered by <span style={{ fontWeight: 700, color: t.fg }}>Atlasync</span>
+            </span>
+          )}
+        </a>
 
         <div style={{ flex: 1, fontSize: 13, color: t.fgMuted }}>
           <span style={{ fontWeight: 600, color: t.fg }}>{filtered.length}</span>
