@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth'
 import { Button, Card, CardHeader, Field, Input, Modal, OtpInput, Tabs, useToast } from '../../components/ui'
+import { I } from '../../components/icons'
 
 function ProfileTab() {
   const { user, refreshUser } = useAuth()
