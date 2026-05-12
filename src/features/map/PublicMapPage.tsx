@@ -3,21 +3,13 @@ import { useParams } from 'react-router-dom'
 import L from 'leaflet'
 import { api } from '../../lib/api'
 import type { MapPin } from '../../types'
-
-function makePinIcon(color: string) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  })
-}
+import { makeClusterGroup, makePinIcon } from './mapUtils'
 
 export default function PublicMapPage() {
   const { token } = useParams<{ token: string }>()
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<L.Map | null>(null)
-  const markersLayer = useRef<L.LayerGroup | null>(null)
+  const clusterGroup = useRef<L.MarkerClusterGroup | null>(null)
   const [pins, setPins] = useState<MapPin[]>([])
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
@@ -32,38 +24,33 @@ export default function PublicMapPage() {
   // Init map once ready
   useEffect(() => {
     if (!ready || !mapRef.current || mapInstance.current) return
-    mapInstance.current = L.map(mapRef.current, {
-      center: [-15.7942, -47.8825],
-      zoom: 5,
-    })
+    mapInstance.current = L.map(mapRef.current, { center: [-15.7942, -47.8825], zoom: 5 })
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(mapInstance.current)
-    markersLayer.current = L.layerGroup().addTo(mapInstance.current)
+    clusterGroup.current = makeClusterGroup()
+    mapInstance.current.addLayer(clusterGroup.current)
   }, [ready])
 
   // Plot pins once map and data are both available
   useEffect(() => {
-    if (!markersLayer.current || !pins.length) return
-    markersLayer.current.clearLayers()
+    if (!clusterGroup.current || !pins.length) return
+    clusterGroup.current.clearLayers()
 
-    const bounds = L.latLngBounds([])
-    let hasValid = false
-
-    pins.forEach((pin) => {
-      if (!pin.lat || !pin.lng) return
-      const color = pin.pinType?.color ?? '#f59e0b'
+    const validPins = pins.filter((p) => p.lat && p.lng)
+    validPins.forEach((pin) => {
       const marker = L.marker([Number(pin.lat), Number(pin.lng)], {
-        icon: makePinIcon(color),
+        icon: makePinIcon(pin.pinType?.color ?? '#6366f1'),
         title: pin.name,
       })
-      markersLayer.current!.addLayer(marker)
-      bounds.extend([Number(pin.lat), Number(pin.lng)])
-      hasValid = true
+      clusterGroup.current!.addLayer(marker)
     })
 
-    if (hasValid) mapInstance.current?.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    if (validPins.length > 0) {
+      const bounds = L.latLngBounds(validPins.map((p) => [Number(p.lat), Number(p.lng)]))
+      mapInstance.current?.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 })
+    }
   }, [pins, ready])
 
   if (error) {
