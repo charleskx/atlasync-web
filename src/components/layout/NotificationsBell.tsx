@@ -69,7 +69,14 @@ export default function NotificationsBell() {
   }
 
   const handleOpen = () => {
-    setOpen(v => !v)
+    setOpen(v => {
+      if (!v && unread > 0) {
+        const now = new Date().toISOString()
+        localStorage.setItem(STORAGE_KEY, now)
+        setLastSeen(now)
+      }
+      return !v
+    })
   }
 
   // Close on outside click
