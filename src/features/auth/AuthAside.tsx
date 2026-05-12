@@ -17,7 +17,7 @@ export default function AuthAside() {
             </svg>
           </div>
           <div className="sidebar-wordmark" style={{ fontSize: 17 }}>
-            atlasync<span className="dot">.</span>
+            AtlaSync<span className="dot">.</span>
           </div>
         </div>
 

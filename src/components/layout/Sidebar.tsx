@@ -112,7 +112,7 @@ export default function Sidebar({
             </svg>
           </div>
           <div className="sidebar-wordmark">
-            atlasync<span className="dot">.</span>
+            AtlaSync<span className="dot">.</span>
           </div>
         </div>
 

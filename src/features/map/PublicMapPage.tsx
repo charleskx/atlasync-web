@@ -486,7 +486,7 @@ export default function PublicMapPage() {
           href="https://atlasync.com"
           target="_blank"
           rel="noopener noreferrer"
-          title="Powered by Atlasync"
+          title="Powered by AtlaSync"
           style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}
         >
           <div style={{ width: 26, height: 26, borderRadius: 7, background: t.accent, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
@@ -496,7 +496,7 @@ export default function PublicMapPage() {
           </div>
           {!isMobile && (
             <span style={{ fontSize: 11, color: t.fgMuted, letterSpacing: '0.01em' }}>
-              Powered by <span style={{ fontWeight: 700, color: t.fg }}>Atlasync</span>
+              Powered by <span style={{ fontWeight: 700, color: t.fg }}>AtlaSync</span>
             </span>
           )}
         </a>
