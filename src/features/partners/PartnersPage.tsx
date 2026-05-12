@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import type { Partner } from '../../types'
-import { Badge, Button, Empty, Input, Select, Skeleton, useToast } from '../../components/ui'
+import { Badge, Button, ConfirmDialog, Empty, Input, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import PartnerSheet from './PartnerSheet'
 
@@ -13,6 +13,7 @@ export default function PartnersPage() {
   const [visibility, setVisibility] = useState<'public' | 'internal' | ''>('')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Partner | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<Partner | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['partners', page, visibility],
@@ -42,10 +43,7 @@ export default function PartnersPage() {
     setSheetOpen(true)
   }
 
-  const handleDelete = (p: Partner) => {
-    if (!window.confirm(`Remover "${p.name}"?`)) return
-    deleteMutation.mutate(p.id)
-  }
+  const handleDelete = (p: Partner) => setConfirmTarget(p)
 
   const totalPages = data ? Math.ceil(data.total / 20) : 1
 
@@ -172,6 +170,18 @@ export default function PartnersPage() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         partner={editing}
+      />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title={`Remover "${confirmTarget?.name}"?`}
+        desc="Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (confirmTarget) deleteMutation.mutate(confirmTarget.id)
+          setConfirmTarget(null)
+        }}
+        onCancel={() => setConfirmTarget(null)}
       />
     </div>
   )

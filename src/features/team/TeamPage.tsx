@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth'
-import { Badge, Button, Empty, Field, Input, Modal, Select, Skeleton, useToast } from '../../components/ui'
+import { Badge, Button, ConfirmDialog, Empty, Field, Input, Modal, Select, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -22,6 +22,7 @@ export default function TeamPage() {
   const { push } = useToast()
   const { user } = useAuth()
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; name: string } | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState('employee')
@@ -53,10 +54,7 @@ export default function TeamPage() {
     onError: () => push({ title: 'Erro ao remover membro', tone: 'error' }),
   })
 
-  const handleRemove = (id: string, name: string) => {
-    if (!window.confirm(`Remover "${name}" da equipe?`)) return
-    removeMutation.mutate(id)
-  }
+  const handleRemove = (id: string, name: string) => setConfirmTarget({ id, name })
 
   return (
     <div className="page">
@@ -161,6 +159,18 @@ export default function TeamPage() {
           </tbody>
         </table>
       )}
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title={`Remover "${confirmTarget?.name}" da equipe?`}
+        desc="O membro perderá o acesso ao workspace."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (confirmTarget) removeMutation.mutate(confirmTarget.id)
+          setConfirmTarget(null)
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
 
       <Modal
         open={inviteOpen}
