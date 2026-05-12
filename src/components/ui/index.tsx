@@ -597,3 +597,42 @@ export function Empty({
     </div>
   )
 }
+
+// ── ConfirmDialog ──────────────────────────────────────────────────────────────
+interface ConfirmDialogProps {
+  open: boolean
+  title: string
+  desc?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  tone?: 'danger' | 'primary'
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  desc,
+  confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
+  tone = 'danger',
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
+  return (
+    <Modal open={open} onClose={onCancel} title={title} desc={desc}
+      footer={
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
+          <Button variant={tone === 'danger' ? 'danger' : 'primary'} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </div>
+      }
+    >
+      {/* content slot kept empty — title + desc carry the message */}
+      <span />
+    </Modal>
+  )
+}

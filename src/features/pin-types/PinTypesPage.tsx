@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import type { PinType } from '../../types'
-import { Button, Empty, Field, Input, Modal, Skeleton, useToast } from '../../components/ui'
+import { Button, ConfirmDialog, Empty, Field, Input, Modal, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
 const PRESET_COLORS = [
@@ -147,6 +147,7 @@ export default function PinTypesPage() {
   const { push } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<PinType | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<PinType | null>(null)
 
   const { data: pinTypes, isLoading } = useQuery({
     queryKey: ['pinTypes'],
@@ -172,10 +173,7 @@ export default function PinTypesPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (pt: PinType) => {
-    if (!window.confirm(`Remover tipo "${pt.name}"? Os parceiros associados perderão esse tipo.`)) return
-    deleteMutation.mutate(pt.id)
-  }
+  const handleDelete = (pt: PinType) => setConfirmTarget(pt)
 
   return (
     <div className="page">
@@ -255,6 +253,18 @@ export default function PinTypesPage() {
         open={modalOpen}
         editing={editing}
         onClose={() => { setModalOpen(false); setEditing(null) }}
+      />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title={`Remover "${confirmTarget?.name}"?`}
+        desc="Os parceiros associados a este tipo perderão a classificação."
+        confirmLabel="Remover"
+        onConfirm={() => {
+          if (confirmTarget) deleteMutation.mutate(confirmTarget.id)
+          setConfirmTarget(null)
+        }}
+        onCancel={() => setConfirmTarget(null)}
       />
     </div>
   )
