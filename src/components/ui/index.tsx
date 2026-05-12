@@ -107,14 +107,21 @@ export function Checkbox({
   checked,
   onChange,
   label,
+  indeterminate,
 }: {
   checked: boolean
   onChange: (v: boolean) => void
   label?: React.ReactNode
+  indeterminate?: boolean
 }) {
+  const active = checked || indeterminate
   const box = (
-    <span className="checkbox" data-checked={checked}>
-      {checked ? <I.check size={11} /> : null}
+    <span className="checkbox" data-checked={active}>
+      {indeterminate && !checked ? (
+        <span style={{ display: 'block', width: 8, height: 2, background: 'currentColor', borderRadius: 1 }} />
+      ) : checked ? (
+        <I.check size={11} />
+      ) : null}
     </span>
   )
   if (label) {

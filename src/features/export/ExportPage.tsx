@@ -20,6 +20,14 @@ export default function ExportPage() {
     },
   })
 
+  const allKeys = columns?.map((c) => c.key) ?? []
+  const allSelected = allKeys.length > 0 && allKeys.every((k) => selectedKeys.includes(k))
+  const someSelected = allKeys.some((k) => selectedKeys.includes(k)) && !allSelected
+
+  const toggleAll = () => {
+    setSelectedKeys(allSelected ? [] : allKeys)
+  }
+
   const toggleColumn = (col: ExportColumn) => {
     setSelectedKeys((prev) =>
       prev.includes(col.key) ? prev.filter((k) => k !== col.key) : [...prev, col.key],
@@ -64,7 +72,7 @@ export default function ExportPage() {
           desc="Selecione as colunas que deseja incluir na exportação"
         />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 20 }}>
+        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Field label="Formato do arquivo">
             <Select value={format} onChange={(e) => setFormat(e.target.value)}>
               <option value="xlsx">Excel (.xlsx)</option>
@@ -78,16 +86,28 @@ export default function ExportPage() {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} h={24} />)}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {/* Select all */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', paddingBottom: 8, borderBottom: '1px solid var(--border)', marginBottom: 2 }}>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onChange={toggleAll}
+                  />
+                  <span className="text-sm" style={{ fontWeight: 500 }}>Selecionar todos</span>
+                  <span className="muted text-sm" style={{ marginLeft: 'auto' }}>
+                    {selectedKeys.length}/{allKeys.length}
+                  </span>
+                </label>
                 {columns?.map((col) => (
-                  <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '2px 0' }}>
                     <Checkbox
                       checked={selectedKeys.includes(col.key)}
                       onChange={() => toggleColumn(col)}
                     />
                     <span className="text-sm">{col.label}</span>
                     {col.type === 'dynamic' && (
-                      <span className="muted text-sm" style={{ fontSize: 11 }}>(personalizado)</span>
+                      <span className="muted text-sm" style={{ fontSize: 11, marginLeft: 4 }}>(personalizado)</span>
                     )}
                   </label>
                 ))}
