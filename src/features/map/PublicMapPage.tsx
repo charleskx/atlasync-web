@@ -499,57 +499,104 @@ export default function PublicMapPage() {
 
   if (error === 'disabled') {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.bg, fontFamily: 'system-ui, -apple-system, sans-serif', padding: 24, gap: 32 }}>
-        {/* Brand */}
-        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="#4f46e5"/>
-            <path d="M16 5C11.582 5 8 8.582 8 13c0 6.222 8 14 8 14s8-7.778 8-14c0-4.418-3.582-8-8-8z" fill="white"/>
-            <circle cx="16" cy="13" r="3.2" fill="#4f46e5"/>
-          </svg>
-          <span style={{ fontWeight: 700, fontSize: 16, color: t.fg, letterSpacing: '-0.3px' }}>AtlaSync</span>
-        </a>
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#0c0c0e',
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        color: '#fff',
+      }}>
+        {/* Top-left wordmark */}
+        <div style={{ padding: '20px 28px', flexShrink: 0 }}>
+          <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+              <path d="M16 5C11.582 5 8 8.582 8 13c0 6.222 8 14 8 14s8-7.778 8-14c0-4.418-3.582-8-8-8z" fill="white"/>
+              <circle cx="16" cy="13" r="3.2" fill="#4f46e5"/>
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '-0.2px' }}>AtlaSync</span>
+          </a>
+        </div>
 
-        {/* Illustration */}
-        <svg width="200" height="130" viewBox="0 0 200 130" fill="none" style={{ opacity: 0.7 }}>
-          <rect x="10" y="10" width="180" height="110" rx="10" fill={t.bgSubtle} stroke={t.border} strokeWidth="1.5"/>
-          <rect x="10" y="10" width="180" height="28" rx="10" fill={t.border} opacity=".4"/>
-          <rect x="10" y="28" width="180" height="10" fill={t.border} opacity=".4"/>
-          <line x1="10"  y1="70"  x2="190" y2="70"  stroke={t.border} strokeWidth=".8"/>
-          <line x1="10"  y1="95"  x2="190" y2="95"  stroke={t.border} strokeWidth=".8"/>
-          <line x1="65"  y1="38"  x2="65"  y2="120" stroke={t.border} strokeWidth=".8"/>
-          <line x1="130" y1="38"  x2="130" y2="120" stroke={t.border} strokeWidth=".8"/>
-          {/* Lock icon center */}
-          <rect x="83" y="56" width="34" height="26" rx="5" fill="#4f46e5" opacity=".15"/>
-          <rect x="83" y="56" width="34" height="26" rx="5" stroke="#4f46e5" strokeWidth="1.5" opacity=".5"/>
-          <path d="M93 56v-4a7 7 0 0114 0v4" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round" opacity=".5"/>
-          <circle cx="100" cy="68" r="3" fill="#4f46e5" opacity=".6"/>
-          <rect x="98.5" y="68" width="3" height="5" rx="1" fill="#4f46e5" opacity=".6"/>
-        </svg>
+        {/* Center */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
+          <div style={{ textAlign: 'center', maxWidth: 400 }}>
 
-        {/* Message */}
-        <div style={{ textAlign: 'center', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontWeight: 700, fontSize: 20, color: t.fg }}>Mapa temporariamente indisponível</div>
-          <div style={{ fontSize: 14, color: t.fgMuted, lineHeight: 1.6 }}>
-            O proprietário desabilitou o acesso público a este mapa.<br/>Entre em contato para mais informações.
+            {/* Icon with glow */}
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
+              <div style={{
+                position: 'absolute',
+                width: 96, height: 96,
+                background: 'radial-gradient(circle, rgba(79,70,229,0.35) 0%, transparent 70%)',
+                borderRadius: '50%',
+              }}/>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.686 2 6 4.686 6 8c0 4.667 6 12 6 12s6-7.333 6-12c0-3.314-2.686-6-6-6z"/>
+                <circle cx="12" cy="8" r="2"/>
+                <line x1="2" y1="20" x2="22" y2="20" strokeOpacity=".3"/>
+              </svg>
+            </div>
+
+            <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 10px', letterSpacing: '-0.4px', color: 'rgba(255,255,255,0.92)' }}>
+              Este mapa está indisponível
+            </h1>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', margin: '0 0 32px', lineHeight: 1.65 }}>
+              O proprietário pausou o acesso público a este mapa.<br/>
+              Entre em contato para mais informações.
+            </p>
+
+            <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 18px', borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.5)', fontSize: 13,
+              textDecoration: 'none', letterSpacing: '-0.1px',
+            }}>
+              Conheça o AtlaSync →
+            </a>
           </div>
         </div>
 
-        {/* Footer */}
-        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: t.fgMuted, textDecoration: 'none', opacity: 0.6 }}>
-          Powered by AtlaSync
-        </a>
+        {/* Bottom */}
+        <div style={{ padding: '16px 28px', textAlign: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.3px' }}>
+            POWERED BY ATLASYNC
+          </span>
+        </div>
       </div>
     )
   }
 
   if (error === 'not-found') {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.bg, fontFamily: 'system-ui, sans-serif' }}>
-        <div style={{ textAlign: 'center', padding: 24 }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🗺️</div>
-          <div style={{ fontWeight: 700, fontSize: 18, color: t.fg, marginBottom: 8 }}>Mapa não encontrado</div>
-          <div style={{ fontSize: 14, color: t.fgMuted }}>Verifique o link e tente novamente.</div>
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#0c0c0e',
+        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
+            <div style={{ position: 'absolute', width: 96, height: 96, background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)', borderRadius: '50%' }}/>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8"  x2="11" y2="14"/>
+              <line x1="8"  y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: 8, letterSpacing: '-0.3px' }}>Mapa não encontrado</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>Verifique o link e tente novamente.</div>
         </div>
       </div>
     )
