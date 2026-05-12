@@ -47,6 +47,7 @@ export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<L.Map | null>(null)
   const clusterGroup = useRef<L.MarkerClusterGroup | null>(null)
+  const [mapReady, setMapReady] = useState(false)
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
   const [selectedMapId, setSelectedMapId] = useState<string>('')
 
@@ -68,18 +69,28 @@ export default function MapPage() {
   // Init map once
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return
-    mapInstance.current = L.map(mapRef.current, { center: [-15.7942, -47.8825], zoom: 5 })
+    const map = L.map(mapRef.current, { center: [-15.7942, -47.8825], zoom: 5 })
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
-    }).addTo(mapInstance.current)
-    clusterGroup.current = makeClusterGroup()
-    mapInstance.current.addLayer(clusterGroup.current)
+    }).addTo(map)
+    const cluster = makeClusterGroup()
+    map.addLayer(cluster)
+    mapInstance.current = map
+    clusterGroup.current = cluster
+    setMapReady(true)
+
+    return () => {
+      map.remove()
+      mapInstance.current = null
+      clusterGroup.current = null
+      setMapReady(false)
+    }
   }, [])
 
-  // Update markers when pins change
+  // Update markers when pins change — waits for map to be ready
   useEffect(() => {
-    if (!clusterGroup.current) return
+    if (!mapReady || !clusterGroup.current) return
     clusterGroup.current.clearLayers()
     setSelectedPin(null)
     if (!pins?.length) return
@@ -98,7 +109,7 @@ export default function MapPage() {
       const bounds = L.latLngBounds(validPins.map((p) => [Number(p.lat), Number(p.lng)]))
       mapInstance.current?.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 })
     }
-  }, [pins])
+  }, [pins, mapReady])
 
   return (
     <div className="page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -117,7 +128,7 @@ export default function MapPage() {
       </div>
 
       <div style={{ position: 'relative', flex: 1, minHeight: 500, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
-        <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+        <div ref={mapRef} style={{ position: 'absolute', inset: 0 }} />
         {selectedPin && <InfoPopup pin={selectedPin} onClose={() => setSelectedPin(null)} />}
       </div>
     </div>

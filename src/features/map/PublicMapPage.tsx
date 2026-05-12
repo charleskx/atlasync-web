@@ -536,7 +536,7 @@ export default function PublicMapPage() {
 
         {/* Map */}
         <div style={{ flex: 1, position: 'relative' }}>
-          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+          <div ref={mapRef} style={{ position: 'absolute', inset: 0 }} />
           {!ready && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.bg, gap: 12 }}>
               <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTopColor: t.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
