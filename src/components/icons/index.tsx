@@ -577,4 +577,5 @@ export const I: Record<string, IconComponent> = {
       }
     />
   ),
+  undo: (p) => <Icon {...p} d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11" />,
 }

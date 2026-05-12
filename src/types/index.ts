@@ -69,7 +69,7 @@ export interface ImportJob {
   tenantId: string
   status: 'pending' | 'processing' | 'done' | 'failed'
   fileName: string
-  fileSize: number
+  fileSize: number | null
   mode: 'full' | 'incremental'
   totalRows: number
   processedRows: number
@@ -78,6 +78,7 @@ export interface ImportJob {
   removed: number
   failed: number
   parseErrors?: { row: number; message: string }[]
+  rolledBackAt?: string | null
   createdAt: string
   finishedAt?: string | null
 }

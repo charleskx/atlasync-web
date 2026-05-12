@@ -461,6 +461,13 @@ export const api = {
     async unblockTenant(id: string) {
       await http.patch(`/admin/tenants/${id}/unblock`)
     },
+    async tenantImports(tenantId: string): Promise<ImportJob[]> {
+      const { data } = await http.get<ImportJob[]>(`/admin/tenants/${tenantId}/imports`)
+      return data
+    },
+    async rollbackImport(tenantId: string, jobId: string): Promise<void> {
+      await http.post(`/admin/tenants/${tenantId}/imports/${jobId}/rollback`)
+    },
     async metrics(): Promise<unknown> {
       const { data } = await http.get('/admin/metrics')
       return data
