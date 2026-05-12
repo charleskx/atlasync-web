@@ -341,7 +341,7 @@ export default function PublicMapPage() {
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
   const [selectedPinDist, setSelectedPinDist] = useState<number | undefined>()
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<'not-found' | 'disabled' | null>(null)
   const [ready, setReady] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
 
@@ -372,7 +372,10 @@ export default function PublicMapPage() {
       setCities(localities.cities)
       setPinTypes(types)
       setReady(true)
-    }).catch(() => setError('Mapa não encontrado ou acesso negado.'))
+    }).catch((err) => {
+      const status = err?.response?.status
+      setError(status === 403 ? 'disabled' : 'not-found')
+    })
   }, [token])
 
   useEffect(() => {
@@ -494,13 +497,59 @@ export default function PublicMapPage() {
   const hasActive = filters.state || filters.city || filters.pinTypeId || filters.search || userLocation
   const activeCount = [filters.state, filters.city, filters.pinTypeId, filters.search, userLocation ? '1' : ''].filter(Boolean).length
 
-  if (error) {
+  if (error === 'disabled') {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.bg, fontFamily: 'system-ui, -apple-system, sans-serif', padding: 24, gap: 32 }}>
+        {/* Brand */}
+        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+            <path d="M16 5C11.582 5 8 8.582 8 13c0 6.222 8 14 8 14s8-7.778 8-14c0-4.418-3.582-8-8-8z" fill="white"/>
+            <circle cx="16" cy="13" r="3.2" fill="#4f46e5"/>
+          </svg>
+          <span style={{ fontWeight: 700, fontSize: 16, color: t.fg, letterSpacing: '-0.3px' }}>AtlaSync</span>
+        </a>
+
+        {/* Illustration */}
+        <svg width="200" height="130" viewBox="0 0 200 130" fill="none" style={{ opacity: 0.7 }}>
+          <rect x="10" y="10" width="180" height="110" rx="10" fill={t.bgSubtle} stroke={t.border} strokeWidth="1.5"/>
+          <rect x="10" y="10" width="180" height="28" rx="10" fill={t.border} opacity=".4"/>
+          <rect x="10" y="28" width="180" height="10" fill={t.border} opacity=".4"/>
+          <line x1="10"  y1="70"  x2="190" y2="70"  stroke={t.border} strokeWidth=".8"/>
+          <line x1="10"  y1="95"  x2="190" y2="95"  stroke={t.border} strokeWidth=".8"/>
+          <line x1="65"  y1="38"  x2="65"  y2="120" stroke={t.border} strokeWidth=".8"/>
+          <line x1="130" y1="38"  x2="130" y2="120" stroke={t.border} strokeWidth=".8"/>
+          {/* Lock icon center */}
+          <rect x="83" y="56" width="34" height="26" rx="5" fill="#4f46e5" opacity=".15"/>
+          <rect x="83" y="56" width="34" height="26" rx="5" stroke="#4f46e5" strokeWidth="1.5" opacity=".5"/>
+          <path d="M93 56v-4a7 7 0 0114 0v4" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round" opacity=".5"/>
+          <circle cx="100" cy="68" r="3" fill="#4f46e5" opacity=".6"/>
+          <rect x="98.5" y="68" width="3" height="5" rx="1" fill="#4f46e5" opacity=".6"/>
+        </svg>
+
+        {/* Message */}
+        <div style={{ textAlign: 'center', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontWeight: 700, fontSize: 20, color: t.fg }}>Mapa temporariamente indisponível</div>
+          <div style={{ fontSize: 14, color: t.fgMuted, lineHeight: 1.6 }}>
+            O proprietário desabilitou o acesso público a este mapa.<br/>Entre em contato para mais informações.
+          </div>
+        </div>
+
+        {/* Footer */}
+        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: t.fgMuted, textDecoration: 'none', opacity: 0.6 }}>
+          Powered by AtlaSync
+        </a>
+      </div>
+    )
+  }
+
+  if (error === 'not-found') {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.bg, fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ textAlign: 'center', padding: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>🗺️</div>
           <div style={{ fontWeight: 700, fontSize: 18, color: t.fg, marginBottom: 8 }}>Mapa não encontrado</div>
-          <div style={{ fontSize: 14, color: t.fgMuted }}>{error}</div>
+          <div style={{ fontSize: 14, color: t.fgMuted }}>Verifique o link e tente novamente.</div>
         </div>
       </div>
     )
