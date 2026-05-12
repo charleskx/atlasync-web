@@ -231,6 +231,9 @@ export const api = {
       const { data } = await http.get<PartnerColumn[]>('/partners/columns')
       return data
     },
+    async updateColumn(id: string, payload: { readonly: boolean }): Promise<void> {
+      await http.patch(`/partners/columns/${id}`, payload)
+    },
     async pins(filters?: {
       city?: string
       state?: string

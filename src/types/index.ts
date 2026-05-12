@@ -57,6 +57,7 @@ export interface PartnerColumn {
   dataType: string
   sortOrder: number
   visible: boolean
+  readonly: boolean
 }
 
 export interface ExportColumn {
