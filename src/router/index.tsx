@@ -14,6 +14,7 @@ const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
 const PartnersPage = lazy(() => import('../features/partners/PartnersPage'))
 const MapPage = lazy(() => import('../features/map/MapPage'))
 const PublicMapPage = lazy(() => import('../features/map/PublicMapPage'))
+const PublicMapsPage = lazy(() => import('../features/map/PublicMapsPage'))
 const ImportPage = lazy(() => import('../features/import/ImportPage'))
 const ExportPage = lazy(() => import('../features/export/ExportPage'))
 const IntegrationsPage = lazy(() => import('../features/integrations/IntegrationsPage'))
@@ -71,6 +72,7 @@ export default function AppRouter() {
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="partners" element={<PartnersPage />} />
                   <Route path="map" element={<MapPage />} />
+                  <Route path="public-map" element={<PublicMapsPage />} />
                   <Route path="import" element={<ImportPage />} />
                   <Route path="export" element={<ExportPage />} />
                   <Route path="integrations" element={<IntegrationsPage />} />
