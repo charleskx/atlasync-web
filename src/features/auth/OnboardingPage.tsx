@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../../lib/api'
 import { useAuth } from '../../context/auth'
-import { Button, Card, Field, Input, Progress, useToast } from '../../components/ui'
+import { Button, Card, Progress, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 
 const STEPS = [
   { title: 'Bem-vindo ao AtlaSync', desc: 'Vamos configurar tudo em 3 minutos.' },
-  { title: 'Google Maps API Key', desc: 'Necessária para geocoding e exibição dos mapas.' },
   { title: 'Importe seus parceiros', desc: 'Faça upload de uma planilha agora ou depois.' },
   { title: 'Tudo pronto!', desc: 'Seu workspace está configurado.' },
 ]
@@ -17,13 +15,11 @@ export default function OnboardingPage() {
   const { refreshUser } = useAuth()
   const { push } = useToast()
   const [step, setStep] = useState(0)
-  const [mapsKey, setMapsKey] = useState('')
   const [loading, setLoading] = useState(false)
 
   const finish = async () => {
     setLoading(true)
     try {
-      if (mapsKey) await api.settings.update({ mapsKey })
       await refreshUser()
       navigate('/dashboard')
     } catch {
@@ -74,19 +70,6 @@ export default function OnboardingPage() {
             )}
 
             {step === 1 && (
-              <Card>
-                <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <Field label="Google Maps API Key" hint="Obrigatória para geocoding. Você pode pular e configurar depois em Configurações.">
-                    <Input icon={<I.key />} placeholder="AIzaSy..." type="password" value={mapsKey} onChange={(e) => setMapsKey(e.target.value)} />
-                  </Field>
-                  <a className="text-sm" style={{ color: 'var(--accent)', cursor: 'pointer' }}>
-                    Como obter uma chave do Google Maps →
-                  </a>
-                </div>
-              </Card>
-            )}
-
-            {step === 2 && (
               <div className="dropzone">
                 <div className="dropzone-icon"><I.upload /></div>
                 <div style={{ fontWeight: 600 }}>Arraste sua planilha aqui</div>
@@ -95,7 +78,7 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 2 && (
               <Card>
                 <div className="card-body" style={{ textAlign: 'center', padding: 32 }}>
                   <div style={{ margin: '0 auto 12px', width: 56, height: 56, borderRadius: '50%', background: 'var(--success-soft)', color: 'var(--success)', display: 'grid', placeItems: 'center' }}>

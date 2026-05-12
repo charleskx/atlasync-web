@@ -180,18 +180,16 @@ function WorkspaceTab() {
     queryKey: ['settings'],
     queryFn: () => api.settings.get(),
   })
-  const [mapsKey, setMapsKey] = useState('')
   const [publicMap, setPublicMap] = useState(false)
 
   useEffect(() => {
     if (settings) {
-      setMapsKey(settings.googleMapsApiKey ?? '')
       setPublicMap(settings.publicMapEnabled ?? false)
     }
   }, [settings])
 
   const mutation = useMutation({
-    mutationFn: () => api.settings.update({ googleMapsApiKey: mapsKey, publicMapEnabled: publicMap }),
+    mutationFn: () => api.settings.update({ publicMapEnabled: publicMap }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['settings'] })
       push({ title: 'Configurações salvas', tone: 'success' })
@@ -205,15 +203,19 @@ function WorkspaceTab() {
     <Card>
       <CardHeader title="Configurações do workspace" desc="Personalize as configurações da sua empresa" />
       <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Field
-          label="Google Maps API Key"
-          hint="Necessária para exibir o mapa interativo de parceiros"
-        >
-          <Input
-            value={mapsKey}
-            onChange={(e) => setMapsKey(e.target.value)}
-            placeholder="AIza..."
-          />
+        <Field label="Mapa público" hint="Permite gerar embeds públicos do mapa de parceiros">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <input
+              type="checkbox"
+              id="public-map"
+              checked={publicMap}
+              onChange={(e) => setPublicMap(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: 'pointer' }}
+            />
+            <label htmlFor="public-map" style={{ cursor: 'pointer', fontSize: 14 }}>
+              Habilitar mapa público
+            </label>
+          </div>
         </Field>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button variant="primary" onClick={() => mutation.mutate()} disabled={mutation.isPending}>

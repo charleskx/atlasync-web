@@ -324,7 +324,7 @@ export const api = {
       const { data } = await axios.get(`${BASE_URL}/maps/public/${token}/pin-types`)
       return data
     },
-    async publicConfig(token: string): Promise<{ googleMapsApiKey: string | null }> {
+    async publicConfig(token: string): Promise<Record<string, never>> {
       const { data } = await axios.get(`${BASE_URL}/maps/public/${token}/config`)
       return data
     },

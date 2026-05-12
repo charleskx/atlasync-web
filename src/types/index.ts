@@ -156,7 +156,6 @@ export interface ListPartnersInput {
 }
 
 export interface TenantSettings {
-  googleMapsApiKey?: string | null
   defaultMapZoom?: number | null
   defaultMapLat?: number | null
   defaultMapLng?: number | null
