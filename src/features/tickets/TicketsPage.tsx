@@ -54,17 +54,16 @@ function NewTicketModal({ open, onClose }: { open: boolean; onClose: () => void 
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Descreva brevemente o problema…"
-            style={{ width: '100%', boxSizing: 'border-box' }}
           />
         </Field>
         <Field label="Descrição" required>
           <textarea
-            className="input"
+            className="textarea"
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder="Explique o problema com detalhes…"
             rows={6}
-            style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 13 }}
+            style={{ fontFamily: 'inherit' }}
           />
         </Field>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -151,8 +150,9 @@ function TicketDetailModal({
           padding: '14px 16px', borderRadius: 8,
           background: 'var(--bg-subtle)', border: '1px solid var(--border)',
           fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+          color: 'var(--fg)',
         }}>
-          {ticket.body}
+          {detail?.body ?? ticket.body}
         </div>
 
         {/* Messages thread */}
@@ -204,14 +204,14 @@ function TicketDetailModal({
 
         {/* Reply box — only if not resolved */}
         {currentStatus !== 'resolved' && (
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <textarea
-              className="input"
+              className="textarea"
               value={reply}
               onChange={e => setReply(e.target.value)}
               placeholder="Escreva sua resposta…"
-              rows={3}
-              style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', fontSize: 13, marginBottom: 8 }}
+              rows={4}
+              style={{ fontFamily: 'inherit' }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button

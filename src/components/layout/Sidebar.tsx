@@ -29,6 +29,7 @@ const dataItems: NavItem[] = [
   { id: 'import', label: 'Importar', icon: <I.upload /> },
   { id: 'export', label: 'Exportar', icon: <I.download /> },
   { id: 'integrations', label: 'Integrações', icon: <I.code /> },
+  { id: 'geocoding-logs', label: 'Logs de Geocoding', icon: <I.pin /> },
 ]
 
 const adminItems: NavItem[] = [

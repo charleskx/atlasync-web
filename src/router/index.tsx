@@ -24,6 +24,7 @@ const BillingPage = lazy(() => import('../features/billing/BillingPage'))
 const SuperAdminPage = lazy(() => import('../features/super-admin/SuperAdminPage'))
 const PinTypesPage = lazy(() => import('../features/pin-types/PinTypesPage'))
 const TicketsPage = lazy(() => import('../features/tickets/TicketsPage'))
+const GeocodingLogsPage = lazy(() => import('../features/geocoding/GeocodingLogsPage'))
 
 function Loader() {
   return (
@@ -83,6 +84,7 @@ export default function AppRouter() {
                   <Route path="pin-types" element={<PinTypesPage />} />
                   <Route path="admin" element={<SuperAdminPage />} />
                   <Route path="support" element={<TicketsPage />} />
+                  <Route path="geocoding-logs" element={<GeocodingLogsPage />} />
                 </Routes>
               </Shell>
             </ProtectedRoute>

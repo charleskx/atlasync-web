@@ -288,6 +288,7 @@ export const I: Record<string, IconComponent> = {
     />
   ),
   filter: (p) => <Icon {...p} d="M22 3H2l8 9.5V19l4 2v-8.5z" />,
+  close: (p) => <Icon {...p} d="M18 6L6 18M6 6l12 12" />,
   arrowRight: (p) => (
     <Icon
       {...p}

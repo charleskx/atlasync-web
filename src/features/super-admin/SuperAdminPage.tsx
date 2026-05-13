@@ -6,7 +6,7 @@ import { useAuth } from '../../context/auth'
 import { Badge, Button, Input, Modal, Skeleton, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
-import type { ImportJob } from '../../types'
+import type { GeocodingLog, ImportJob } from '../../types'
 
 const PLAN_LABELS: Record<string, string> = {
   monthly: 'Mensal',
@@ -308,11 +308,144 @@ function TenantUsersModal({
   )
 }
 
+// ── Geocoding Logs Tab ────────────────────────────────────────────────────────
+const GEO_STATUS_LABEL: Record<string, string> = { no_results: 'Sem resultado', failed: 'Erro' }
+const GEO_STATUS_TONE: Record<string, 'warning' | 'danger'> = { no_results: 'warning', failed: 'danger' }
+
+function AdminGeocodingLogs() {
+  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+
+  const { data: logs = [], isLoading } = useQuery<GeocodingLog[]>({
+    queryKey: ['admin', 'geocoding-logs'],
+    queryFn: () => api.geocodingLogs.listAll(),
+    refetchInterval: 60_000,
+  })
+
+  const filtered = logs.filter(l =>
+    !search ||
+    l.partnerName?.toLowerCase().includes(search.toLowerCase()) ||
+    l.tenantName?.toLowerCase().includes(search.toLowerCase()) ||
+    l.address.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  // Group by tenant
+  const byTenant = filtered.reduce<Record<string, { name: string; logs: GeocodingLog[] }>>((acc, log) => {
+    const key = log.tenantId ?? 'unknown'
+    if (!acc[key]) acc[key] = { name: log.tenantName ?? key, logs: [] }
+    acc[key].logs.push(log)
+    return acc
+  }, {})
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Stats bar */}
+      {logs.length > 0 && (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total de falhas', value: logs.length, color: 'var(--danger)' },
+            { label: 'Empresas afetadas', value: Object.keys(byTenant).length, color: 'var(--warning)' },
+            { label: 'Parceiros afetados', value: new Set(logs.map(l => l.partnerId)).size, color: 'var(--fg-muted)' },
+          ].map(s => (
+            <div key={s.label} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 16px', borderRadius: 10,
+              background: 'var(--bg-elev)', border: '1px solid var(--border)',
+            }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</span>
+              <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="input-with-icon" style={{ maxWidth: 360 }}>
+        <I.search size={14} />
+        <input
+          className="input"
+          placeholder="Buscar por empresa, parceiro ou endereço…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+
+      {isLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[...Array(5)].map((_, i) => <Skeleton key={i} h={56} />)}
+        </div>
+      ) : logs.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--fg-muted)' }}>
+          <I.pin size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <div style={{ fontWeight: 600 }}>Nenhuma falha de geocodificação registrada</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {Object.entries(byTenant).map(([tenantId, { name, logs: tenantLogs }]) => (
+            <div key={tenantId}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <I.partners size={12} />
+                {name}
+                <span style={{
+                  padding: '1px 7px', borderRadius: 99,
+                  background: 'color-mix(in srgb, var(--danger) 12%, transparent)',
+                  color: 'var(--danger)', fontSize: 11,
+                }}>{tenantLogs.length} falha{tenantLogs.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {tenantLogs.map(log => (
+                  <div key={log.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '11px 16px', borderRadius: 10,
+                    background: 'var(--bg-elev)', border: '1px solid var(--border)',
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      display: 'grid', placeItems: 'center',
+                      background: log.status === 'failed'
+                        ? 'color-mix(in srgb, var(--danger) 12%, transparent)'
+                        : 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                    }}>
+                      <I.alert size={14} style={{ color: log.status === 'failed' ? 'var(--danger)' : 'var(--warning)' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{log.partnerName}</span>
+                        <Badge tone={GEO_STATUS_TONE[log.status]}>{GEO_STATUS_LABEL[log.status]}</Badge>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {log.address}
+                      </div>
+                      {log.errorReason && (
+                        <div style={{ fontSize: 12, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                          {log.errorReason}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-subtle)', flexShrink: 0 }}>
+                      {new Date(log.attemptedAt).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SuperAdminPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { push } = useToast()
+  const [activeTab, setActiveTab] = useState<'tenants' | 'geocoding'>('tenants')
   const [search, setSearch] = useState('')
   const [importsModal, setImportsModal] = useState<{ id: string; name: string } | null>(null)
   const [usersModal, setUsersModal] = useState<{ id: string; name: string } | null>(null)
@@ -370,6 +503,33 @@ export default function SuperAdminPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        {([
+          { id: 'tenants', label: 'Empresas', icon: <I.partners size={14} /> },
+          { id: 'geocoding', label: 'Falhas de Geocoding', icon: <I.pin size={14} /> },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', fontSize: 13, fontWeight: 500,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: activeTab === tab.id ? 'var(--accent)' : 'var(--fg-muted)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
+              marginBottom: -1, transition: 'color .15s',
+            }}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'geocoding' && <AdminGeocodingLogs />}
+
+      {activeTab === 'tenants' && <>
       <div style={{ display: 'flex', gap: 8 }}>
         <Input
           icon={<I.search size={14} />}
@@ -464,6 +624,8 @@ export default function SuperAdminPage() {
           </tbody>
         </table>
       )}
+
+      </>}
 
       {importsModal && (
         <TenantImportsModal

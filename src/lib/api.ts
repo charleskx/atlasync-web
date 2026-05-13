@@ -19,6 +19,7 @@ import type {
   TicketDetail,
   TicketMessage,
   User,
+  GeocodingLog,
 } from '../types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -540,5 +541,24 @@ export const api = {
 
   superAdmin: {
     tenants: () => api.admin.tenants(),
+  },
+
+  geocodingLogs: {
+    async list(): Promise<GeocodingLog[]> {
+      const { data } = await http.get<GeocodingLog[]>('/geocoding-logs')
+      return data
+    },
+    async listByPartner(partnerId: string): Promise<GeocodingLog[]> {
+      const { data } = await http.get<GeocodingLog[]>(`/geocoding-logs/partner/${partnerId}`)
+      return data
+    },
+    async listAll(): Promise<GeocodingLog[]> {
+      const { data } = await http.get<GeocodingLog[]>('/admin/geocoding-logs')
+      return data
+    },
+    async summary(): Promise<{ tenantId: string; tenantName: string; total: number; failures: number; lastAttempt: string }[]> {
+      const { data } = await http.get('/admin/geocoding-logs/summary')
+      return data
+    },
   },
 }

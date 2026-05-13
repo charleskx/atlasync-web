@@ -152,9 +152,12 @@ export interface PaginatedResponse<T> {
 export interface ListPartnersInput {
   page?: number
   limit?: number
+  search?: string
   visibility?: 'public' | 'internal'
   pinTypeId?: string
   geocodeStatus?: 'pending' | 'done' | 'failed'
+  source?: 'dashboard' | 'import'
+  city?: string
 }
 
 export interface Ticket {
@@ -180,6 +183,23 @@ export interface TicketMessage {
 
 export interface TicketDetail extends Ticket {
   messages: TicketMessage[]
+}
+
+export interface GeocodingLog {
+  id: string
+  partnerId: string
+  partnerName?: string | null
+  tenantId?: string
+  tenantName?: string | null
+  address: string
+  status: 'success' | 'no_results' | 'failed'
+  errorReason: string | null
+  provider: string
+  lat?: number | null
+  lng?: number | null
+  attemptedAt: string
+  geocodeStatus?: string | null
+  hasLog?: boolean
 }
 
 export interface TenantSettings {

@@ -97,7 +97,7 @@ export default function NotificationsBell() {
   const handleAction = (n: Notif) => {
     setOpen(false)
     if (n.type === 'import_done' || n.type === 'import_failed') navigate('/import')
-    else if (n.type === 'geocoding_failures') navigate('/partners')
+    else if (n.type === 'geocoding_failures') navigate('/geocoding-logs')
     else if (n.type === 'trial_expiring') navigate('/billing')
     else if (n.type === 'ticket_reply' || n.type === 'new_ticket') navigate('/support')
   }
