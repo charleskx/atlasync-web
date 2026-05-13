@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../context/auth'
 import Shell from '../components/layout/Shell'
+import SubscriptionWall from '../components/layout/SubscriptionWall'
 
 const LoginPage = lazy(() => import('../features/auth/LoginPage'))
 const RegisterPage = lazy(() => import('../features/auth/RegisterPage'))
@@ -68,6 +69,7 @@ export default function AppRouter() {
           path="/*"
           element={
             <ProtectedRoute>
+              <SubscriptionWall>
               <Shell>
                 <Routes>
                   <Route index element={<Navigate to="/dashboard" replace />} />
@@ -87,6 +89,7 @@ export default function AppRouter() {
                   <Route path="geocoding-logs" element={<GeocodingLogsPage />} />
                 </Routes>
               </Shell>
+              </SubscriptionWall>
             </ProtectedRoute>
           }
         />

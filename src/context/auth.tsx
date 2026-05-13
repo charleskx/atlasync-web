@@ -6,6 +6,7 @@ interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  subscriptionStatus: string | null
   login: (email: string, password: string) => Promise<{
     requiresTwoFactor?: boolean
     tempToken?: string
@@ -19,19 +20,23 @@ const AuthCtx = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshUser = useCallback(async () => {
     const token = localStorage.getItem('accessToken')
     if (!token) {
       setUser(null)
+      setSubscriptionStatus(null)
       return
     }
     try {
       const me = await api.auth.me()
       setUser(me)
+      setSubscriptionStatus(me.subscriptionStatus)
     } catch {
       setUser(null)
+      setSubscriptionStatus(null)
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
     }
@@ -68,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        subscriptionStatus,
         login,
         loginWithTotp,
         logout,

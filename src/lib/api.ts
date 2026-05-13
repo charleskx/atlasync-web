@@ -127,12 +127,8 @@ export const api = {
       await http.get(`/auth/verify`, { params: { token } })
     },
 
-    async me(): Promise<User> {
-      const token = localStorage.getItem('accessToken')
-      if (!token) throw new Error('No token')
-      const userId = decodeJwtSub(token)
-      if (!userId) throw new Error('Invalid token')
-      const { data } = await http.get<Record<string, unknown>>(`/users/${userId}`)
+    async me(): Promise<User & { subscriptionStatus: string | null }> {
+      const { data } = await http.get<Record<string, unknown>>('/auth/me')
       return {
         id: data.id as string,
         name: data.name as string,
@@ -141,6 +137,7 @@ export const api = {
         tenantId: data.tenantId as string,
         emailVerified: data.emailVerified as boolean,
         twoFactorEnabled: (data.totpEnabled ?? data.twoFactorEnabled) as boolean,
+        subscriptionStatus: (data.subscriptionStatus as string | null) ?? null,
       }
     },
 
