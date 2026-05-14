@@ -179,6 +179,36 @@ export default function ImportPage() {
         </div>
       </Card>
 
+      {/* Column reference */}
+      <Card>
+        <CardHeader title="Colunas da planilha" />
+        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '160px 80px 1fr', gap: '6px 16px', fontSize: 13 }}>
+            <span style={{ fontWeight: 600, color: 'var(--fg-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coluna</span>
+            <span style={{ fontWeight: 600, color: 'var(--fg-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Obrigatório</span>
+            <span style={{ fontWeight: 600, color: 'var(--fg-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Descrição</span>
+
+            {[
+              { col: 'nome', required: true, desc: 'Nome do parceiro' },
+              { col: 'endereço', required: true, desc: 'Endereço completo usado para geocoding' },
+              { col: 'tipo', required: false, desc: 'Nome do tipo de pin cadastrado no sistema' },
+              { col: 'visibilidade', required: false, desc: 'public ou internal (padrão: public)' },
+              { col: 'outras colunas', required: false, desc: 'Qualquer coluna extra vira campo dinâmico do parceiro' },
+            ].map(({ col, required, desc }) => (
+              <>
+                <span key={col} className="mono" style={{ color: 'var(--fg)' }}>{col}</span>
+                <span key={col + '-req'}>
+                  {required
+                    ? <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Sim</span>
+                    : <span style={{ color: 'var(--fg-subtle)' }}>Não</span>}
+                </span>
+                <span key={col + '-desc'} className="muted text-sm" style={{ fontSize: 13 }}>{desc}</span>
+              </>
+            ))}
+          </div>
+        </div>
+      </Card>
+
       {/* Confirmation modal */}
       <Modal
         open={!!pendingFile}
