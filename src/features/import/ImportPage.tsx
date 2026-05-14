@@ -142,6 +142,7 @@ export default function ImportPage() {
         </div>
       </div>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <Card>
         <div
           className={`dropzone${dragging ? ' dragging' : ''}`}
@@ -312,6 +313,7 @@ export default function ImportPage() {
           </table>
         )}
       </Card>
+      </div>
     </div>
   )
 }
