@@ -549,13 +549,5 @@ export const api = {
       const { data } = await http.get<GeocodingLog[]>(`/geocoding-logs/partner/${partnerId}`)
       return data
     },
-    async listAll(): Promise<GeocodingLog[]> {
-      const { data } = await http.get<GeocodingLog[]>('/admin/geocoding-logs')
-      return data
-    },
-    async summary(): Promise<{ tenantId: string; tenantName: string; total: number; failures: number; lastAttempt: string }[]> {
-      const { data } = await http.get('/admin/geocoding-logs/summary')
-      return data
-    },
   },
 }
