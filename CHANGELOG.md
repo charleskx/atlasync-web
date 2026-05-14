@@ -9,6 +9,11 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-14
+
+- Melhorias e correções internas
+
+
 ## [0.0.1] - 2026-05-14
 
 ### Adicionado
