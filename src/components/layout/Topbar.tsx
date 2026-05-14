@@ -39,9 +39,8 @@ export default function Topbar({
           <I.panelLeft />
         </button>
         <button
-          className="icon-btn"
+          className="icon-btn show-sm"
           onClick={onOpenMobile}
-          style={{ display: 'none' }}
           id="mobile-menu-btn"
         >
           <I.menu />

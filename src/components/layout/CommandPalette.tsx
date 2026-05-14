@@ -18,7 +18,7 @@ const ALL_ITEMS: CommandItem[] = [
   { id: 'settings?tab=security', label: 'Configurar 2FA', icon: <I.shield />, kind: 'Segurança' },
   { id: 'integrations', label: 'Gerar embed', icon: <I.code />, kind: 'Ação' },
   { id: 'team', label: 'Convidar membro', icon: <I.users />, kind: 'Equipe' },
-  { id: 'settings', label: 'Configurar Google Maps Key', icon: <I.key />, kind: 'Configuração' },
+  { id: 'settings', label: 'Configurações', icon: <I.settings />, kind: 'Configuração' },
 ]
 
 interface CommandPaletteProps {
