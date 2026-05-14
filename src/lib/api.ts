@@ -86,13 +86,6 @@ function storeTokens(tokens: AuthTokens) {
   localStorage.setItem('refreshToken', tokens.refreshToken)
 }
 
-function decodeJwtSub(token: string): string | null {
-  try {
-    return JSON.parse(atob(token.split('.')[1])).sub as string
-  } catch {
-    return null
-  }
-}
 
 export const api = {
   auth: {
