@@ -7,6 +7,7 @@ import SubscriptionWall from '../components/layout/SubscriptionWall'
 const LoginPage = lazy(() => import('../features/auth/LoginPage'))
 const RegisterPage = lazy(() => import('../features/auth/RegisterPage'))
 const ForgotPage = lazy(() => import('../features/auth/ForgotPage'))
+const ResetPasswordPage = lazy(() => import('../features/auth/ResetPasswordPage'))
 const VerifyEmailPage = lazy(() => import('../features/auth/VerifyEmailPage'))
 const TwoFactorPage = lazy(() => import('../features/auth/TwoFactorPage'))
 const OnboardingPage = lazy(() => import('../features/auth/OnboardingPage'))
@@ -57,6 +58,7 @@ export default function AppRouter() {
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
         <Route path="/forgot" element={<GuestRoute><ForgotPage /></GuestRoute>} />
+        <Route path="/reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/2fa" element={<TwoFactorPage />} />
         <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
