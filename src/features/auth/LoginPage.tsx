@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/auth'
@@ -28,7 +29,13 @@ export default function LoginPage() {
       }
       navigate('/dashboard')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Credenciais inválidas'
+      if (axios.isAxiosError(err) && err.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
+        navigate('/verify-email', { state: { email } })
+        return
+      }
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.message ?? 'Credenciais inválidas')
+        : 'Credenciais inválidas'
       setError(msg)
       push({ title: 'Erro ao entrar', desc: msg, tone: 'error' })
     } finally {

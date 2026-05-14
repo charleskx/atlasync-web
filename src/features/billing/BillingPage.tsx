@@ -70,7 +70,7 @@ export default function BillingPage() {
   const planType = subscription?.planType ?? ''
   const subscriptionStatus = subscription?.status ?? ''
   const isSubscriptionActive = subscriptionStatus === 'active' || subscriptionStatus === 'trialing'
-  const hasActivePlan = isSubscriptionActive && (planType === 'monthly' || planType === 'annual')
+  const hasActivePlan = subscriptionStatus === 'active' && (planType === 'monthly' || planType === 'annual')
   const daysUsed = subscription?.trialEndsAt
     ? Math.max(0, 14 - Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / 86_400_000))
     : 0
