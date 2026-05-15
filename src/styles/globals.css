@@ -61,7 +61,7 @@ html, body, #root {
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
 html { overflow-x: clip; }
-body { overflow: clip; }
+body { overflow: hidden; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: none; padding: 0; }
 a { color: inherit; text-decoration: none; cursor: pointer; }
@@ -90,8 +90,8 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   grid-template-columns: var(--sidebar-w, 240px) 1fr;
   grid-template-rows: 56px 1fr;
   grid-template-areas: "sidebar topbar" "sidebar main";
-  position: fixed;
-  inset: 0;
+  height: 100vh;
+  height: 100dvh;
   transition: grid-template-columns .25s ease;
 }
 .app-shell[data-collapsed="true"] { --sidebar-w: 64px; }
@@ -195,7 +195,7 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 }
 
 /* Main */
-.main { grid-area: main; overflow: auto; overflow-x: hidden; min-width: 0; }
+.main { grid-area: main; overflow-y: scroll; overflow-x: hidden; min-width: 0; overscroll-behavior-y: contain; touch-action: pan-y; }
 .page {
   max-width: 1400px; margin: 0 auto;
   padding: var(--space-6) var(--space-8);
