@@ -83,8 +83,32 @@ interface InfoPopupProps {
   onClose: () => void
 }
 
+const NAV_APPS = [
+  {
+    label: 'Google Maps',
+    icon: 'https://www.google.com/favicon.ico',
+    url: (lat: number, lng: number) =>
+      `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+  },
+  {
+    label: 'Waze',
+    icon: 'https://www.waze.com/favicon.ico',
+    url: (lat: number, lng: number) =>
+      `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+  },
+  {
+    label: 'Apple Maps',
+    icon: 'https://www.apple.com/favicon.ico',
+    url: (lat: number, lng: number) =>
+      `https://maps.apple.com/?daddr=${lat},${lng}`,
+  },
+]
+
 function InfoPopup({ pin, distance, onClose }: InfoPopupProps) {
+  const [navOpen, setNavOpen] = useState(false)
   const addressLines = [pin.address, [pin.city, pin.state].filter(Boolean).join(' — ')].filter(Boolean)
+  const hasCoords = pin.lat != null && pin.lng != null
+
   return (
     <div style={{
       position: 'absolute',
@@ -128,6 +152,48 @@ function InfoPopup({ pin, distance, onClose }: InfoPopupProps) {
           </div>
         )}
       </div>
+
+      {hasCoords && (
+        <div style={{ position: 'relative', marginTop: 6 }}>
+          <button
+            onClick={() => setNavOpen(v => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '7px 12px', borderRadius: 8, border: `1px solid ${t.border}`,
+              background: t.bgElev ?? t.bg, color: t.fg, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Como chegar
+          </button>
+          {navOpen && (
+            <div style={{
+              position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
+              background: t.bg, border: `1px solid ${t.border}`,
+              borderRadius: 10, overflow: 'hidden',
+              boxShadow: t.shadow, zIndex: 10,
+            }}>
+              {NAV_APPS.map(app => (
+                <a
+                  key={app.label}
+                  href={app.url(pin.lat!, pin.lng!)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setNavOpen(false)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', color: t.fg, fontSize: 13, fontWeight: 500,
+                    textDecoration: 'none', borderBottom: `1px solid ${t.border}`,
+                  }}
+                >
+                  <img src={app.icon} width={16} height={16} style={{ borderRadius: 3 }} alt="" />
+                  {app.label}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
