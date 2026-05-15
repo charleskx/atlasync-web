@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { api } from '../../lib/api'
+import { useAuth } from '../../context/auth'
 import { Button, Field, Input, Select, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import AuthAside from './AuthAside'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { loginWithGoogle } = useAuth()
   const { push } = useToast()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({ name: '', email: '', password: '', company: '', size: '', source: '' })
@@ -48,6 +51,29 @@ export default function RegisterPage() {
               : 'Vamos personalizar o workspace.'}
           </div>
           <div className="auth-form-fields">
+            {step === 1 && (
+              <>
+                <GoogleLogin
+                  onSuccess={async (response) => {
+                    if (!response.credential) return
+                    try {
+                      await loginWithGoogle(response.credential)
+                      navigate('/dashboard')
+                    } catch {
+                      push({ title: 'Erro ao entrar com Google', desc: 'Tente novamente.', tone: 'error' })
+                    }
+                  }}
+                  onError={() => push({ title: 'Erro ao entrar com Google', desc: 'Tente novamente.', tone: 'error' })}
+                  width="100%"
+                  text="signup_with"
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>ou crie com e-mail</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                </div>
+              </>
+            )}
             {step === 1 ? (
               <>
                 <Field label="Nome completo">

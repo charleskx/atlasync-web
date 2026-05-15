@@ -165,6 +165,22 @@ export const api = {
       const { data } = await http.post<{ accessToken: string; refreshToken: string }>('/auth/2fa/recover', { tempToken, code })
       storeTokens(data)
     },
+
+    async loginWithGoogle(credential: string): Promise<void> {
+      const { data } = await http.post<{ accessToken: string; refreshToken: string }>('/auth/google', { credential })
+      storeTokens(data)
+    },
+  },
+
+  places: {
+    async autocomplete(input: string, sessiontoken?: string): Promise<{ placeId: string; description: string; mainText: string; secondaryText: string }[]> {
+      const { data } = await http.get<{ results: { placeId: string; description: string; mainText: string; secondaryText: string }[] }>('/places/autocomplete', { params: { input, sessiontoken } })
+      return data.results
+    },
+    async details(placeId: string, sessiontoken?: string): Promise<{ placeId: string; address: string; lat: number; lng: number; city?: string; state?: string }> {
+      const { data } = await http.get(`/places/details/${placeId}`, { params: sessiontoken ? { sessiontoken } : undefined })
+      return data
+    },
   },
 
   users: {

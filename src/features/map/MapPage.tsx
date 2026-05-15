@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import L from 'leaflet'
+import { GoogleMap, MarkerClusterer, Marker, useJsApiLoader } from '@react-google-maps/api'
 import { api } from '../../lib/api'
 import { Badge, Select } from '../../components/ui'
 import { I } from '../../components/icons'
 import type { MapPin, PartnerColumn } from '../../types'
-import { makeClusterGroup, makePinIcon } from './mapUtils'
+import { makePinIconUrl, PIN_ICON_SIZE } from './mapUtils'
+
+const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
+const MAP_CENTER = { lat: -15.7942, lng: -47.8825 }
+const MAP_OPTIONS: google.maps.MapOptions = {
+  mapTypeControl: false,
+  fullscreenControl: false,
+  streetViewControl: false,
+  gestureHandling: 'greedy',
+}
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 interface Filters {
@@ -36,11 +45,8 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
     staleTime: 60_000,
   })
 
-  // Sync notes from fetched partner
-  useEffect(() => {
-    if (partner && !notesDirty) {
-      setNotes(partner.notes ?? '')
-    }
+  useMemo(() => {
+    if (partner && !notesDirty) setNotes(partner.notes ?? '')
   }, [partner, notesDirty])
 
   const saveNotes = useMutation({
@@ -80,7 +86,6 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
         overflow: 'hidden',
       }}
     >
-      {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0,
@@ -108,7 +113,6 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
         </div>
       </div>
 
-      {/* Body — scrollable */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32, color: 'var(--fg-muted)', fontSize: 13 }}>
@@ -116,7 +120,6 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
           </div>
         ) : (
           <>
-            {/* Standard fields */}
             <Section label="Informações">
               <Field label="Endereço" value={partner?.address ?? pin.address} />
               <Field label="Cidade / Estado" value={[partner?.city ?? pin.city, partner?.state ?? pin.state].filter(Boolean).join(' / ')} />
@@ -126,7 +129,6 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
               )}
             </Section>
 
-            {/* Custom / dynamic fields */}
             {columns.length > 0 && partner?.dynamicValues && Object.keys(partner.dynamicValues).some(k => partner.dynamicValues![k] != null) && (
               <Section label="Campos personalizados">
                 {columns.map(col => {
@@ -137,7 +139,6 @@ function InfoPopup({ pin, onClose }: { pin: MapPin; onClose: () => void }) {
               </Section>
             )}
 
-            {/* Observation / notes */}
             <Section label="Observação">
               <textarea
                 className="input"
@@ -205,7 +206,6 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <span style={{ fontWeight: 600, fontSize: 13 }}>Filtros</span>
         {hasActive && (
@@ -219,9 +219,7 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
         )}
       </div>
 
-      {/* Fields */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Search */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Busca</label>
           <div style={{ position: 'relative' }}>
@@ -236,7 +234,6 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
           </div>
         </div>
 
-        {/* Estado */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Estado</label>
           <Select value={filters.state} onChange={(e) => set({ state: e.target.value, city: '' })} style={{ width: '100%' }}>
@@ -245,7 +242,6 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
           </Select>
         </div>
 
-        {/* Cidade */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cidade</label>
           <Select value={filters.city} onChange={(e) => set({ city: e.target.value })} style={{ width: '100%' }} disabled={!cities.length}>
@@ -254,7 +250,6 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
           </Select>
         </div>
 
-        {/* Visibilidade */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Visibilidade</label>
           <Select value={filters.visibility} onChange={(e) => set({ visibility: e.target.value })} style={{ width: '100%' }}>
@@ -264,7 +259,6 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
           </Select>
         </div>
 
-        {/* Tipo de pin */}
         {pinTypes.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tipo de pin</label>
@@ -299,10 +293,8 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
 
 // ── MapPage ───────────────────────────────────────────────────────────────────
 export default function MapPage() {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<L.Map | null>(null)
-  const clusterGroup = useRef<L.MarkerClusterGroup | null>(null)
-  const [mapReady, setMapReady] = useState(false)
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: MAPS_API_KEY, id: 'google-map-script' })
+  const [mapRef, setMapRef] = useState<google.maps.Map | null>(null)
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [filters, setFilters] = useState<Filters>({ search: '', state: '', city: '', pinTypeId: '', visibility: '' })
@@ -312,7 +304,6 @@ export default function MapPage() {
     queryFn: () => api.partners.pins(),
   })
 
-  // Derived options from loaded pins
   const states = useMemo(() => [...new Set(allPins.map((p) => p.state).filter(Boolean))].sort() as string[], [allPins])
   const cities = useMemo(() => {
     const source = filters.state ? allPins.filter((p) => p.state === filters.state) : allPins
@@ -324,7 +315,6 @@ export default function MapPage() {
     return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name))
   }, [allPins])
 
-  // Client-side filtering
   const filtered = useMemo(() => allPins.filter((p) => {
     if (filters.state && p.state !== filters.state) return false
     if (filters.city && p.city !== filters.city) return false
@@ -337,62 +327,29 @@ export default function MapPage() {
     return true
   }), [allPins, filters])
 
-  // Init map once
-  useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return
-    const map = L.map(mapRef.current, { center: [-15.7942, -47.8825], zoom: 5 })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map)
-    const cluster = makeClusterGroup()
-    map.addLayer(cluster)
-    mapInstance.current = map
-    clusterGroup.current = cluster
-    setMapReady(true)
+  const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
-    return () => {
-      map.remove()
-      mapInstance.current = null
-      clusterGroup.current = null
-      setMapReady(false)
+  const onMapLoad = (map: google.maps.Map) => {
+    setMapRef(map)
+    if (validPins.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+      map.fitBounds(bounds)
     }
-  }, [])
+  }
 
-  // Invalidate size when sidebar opens/closes
-  useEffect(() => {
-    if (mapInstance.current) {
-      setTimeout(() => mapInstance.current?.invalidateSize(), 260)
-    }
-  }, [sidebarOpen])
-
-  // Update markers when filtered pins or map readiness changes
-  useEffect(() => {
-    if (!mapReady || !clusterGroup.current) return
-    clusterGroup.current.clearLayers()
-    setSelectedPin(null)
-
-    const valid = filtered.filter((p) => p.lat && p.lng)
-    valid.forEach((pin) => {
-      const marker = L.marker([Number(pin.lat), Number(pin.lng)], {
-        icon: makePinIcon(pin.pinType?.color ?? '#6366f1'),
-        title: pin.name,
-      })
-      marker.on('click', () => setSelectedPin((prev) => prev?.id === pin.id ? null : pin))
-      clusterGroup.current!.addLayer(marker)
-    })
-
-    if (valid.length > 0) {
-      const bounds = L.latLngBounds(valid.map((p) => [Number(p.lat), Number(p.lng)]))
-      mapInstance.current?.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 })
-    }
-  }, [filtered, mapReady])
+  // Fit bounds when filtered pins change
+  useMemo(() => {
+    if (!mapRef || validPins.length === 0) return
+    const bounds = new google.maps.LatLngBounds()
+    validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+    mapRef.fitBounds(bounds)
+  }, [validPins, mapRef])
 
   const activeCount = [filters.search, filters.state, filters.city, filters.pinTypeId, filters.visibility].filter(Boolean).length
 
   return (
     <div className="page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
       <div className="page-header">
         <div className="page-title-block">
           <h1 className="h1">Mapa interno</h1>
@@ -419,24 +376,48 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Body: sidebar + map */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 0, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
-        {/* Filter sidebar */}
         {sidebarOpen && (
           <div style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--bg-elev)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <FilterPanel
-              filters={filters}
-              states={states}
-              cities={cities}
-              pinTypes={pinTypes}
-              onChange={setFilters}
-            />
+            <FilterPanel filters={filters} states={states} cities={cities} pinTypes={pinTypes} onChange={setFilters} />
           </div>
         )}
 
-        {/* Map */}
         <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
-          <div ref={mapRef} style={{ position: 'absolute', inset: 0 }} />
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ position: 'absolute', inset: 0 }}
+              center={MAP_CENTER}
+              zoom={5}
+              options={MAP_OPTIONS}
+              onLoad={onMapLoad}
+            >
+              <MarkerClusterer>
+                {(clusterer) => (
+                  <>
+                    {validPins.map((pin) => (
+                      <Marker
+                        key={pin.id}
+                        position={{ lat: Number(pin.lat), lng: Number(pin.lng) }}
+                        title={pin.name}
+                        icon={{
+                          url: makePinIconUrl(pin.pinType?.color ?? '#6366f1'),
+                          scaledSize: new google.maps.Size(PIN_ICON_SIZE.width, PIN_ICON_SIZE.height),
+                          anchor: new google.maps.Point(PIN_ICON_SIZE.width / 2, PIN_ICON_SIZE.height),
+                        }}
+                        clusterer={clusterer}
+                        onClick={() => setSelectedPin((prev) => prev?.id === pin.id ? null : pin)}
+                      />
+                    ))}
+                  </>
+                )}
+              </MarkerClusterer>
+            </GoogleMap>
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
+              Carregando mapa…
+            </div>
+          )}
           {selectedPin && <InfoPopup pin={selectedPin} onClose={() => setSelectedPin(null)} />}
         </div>
       </div>

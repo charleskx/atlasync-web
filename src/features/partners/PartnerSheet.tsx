@@ -1,8 +1,98 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import type { Partner, PartnerColumn } from '../../types'
 import { Button, Field, Input, Select, Sheet, useToast } from '../../components/ui'
+
+// ── AddressAutocomplete ───────────────────────────────────────────────────────
+interface AddressSuggestion {
+  placeId: string
+  description: string
+  mainText: string
+  secondaryText: string
+}
+
+function AddressAutocomplete({ value, onChange }: { value: string; onChange: (address: string) => void }) {
+  const [input, setInput] = useState(value)
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sessionRef = useRef(crypto.randomUUID())
+
+  useEffect(() => { setInput(value) }, [value])
+
+  const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value
+    setInput(v)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (v.trim().length < 3) { setSuggestions([]); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const results = await api.places.autocomplete(v.trim(), sessionRef.current)
+        setSuggestions(results)
+        setOpen(results.length > 0)
+      } catch {
+        setSuggestions([])
+        setOpen(false)
+      } finally {
+        setLoading(false)
+      }
+    }, 350)
+  }, [])
+
+  const handleSelect = useCallback(async (suggestion: AddressSuggestion) => {
+    setOpen(false)
+    setInput(suggestion.description)
+    try {
+      const details = await api.places.details(suggestion.placeId, sessionRef.current)
+      onChange(details.address)
+      setInput(details.address)
+    } catch {
+      onChange(suggestion.description)
+    }
+    sessionRef.current = crypto.randomUUID()
+  }, [onChange])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <Input
+        value={input}
+        onChange={handleInput}
+        placeholder="Rua, número, cidade, estado"
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {loading && (
+        <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--fg-muted)' }}>…</div>
+      )}
+      {open && suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100,
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 8, boxShadow: 'var(--shadow-lg)', overflow: 'hidden',
+        }}>
+          {suggestions.map((s) => (
+            <button
+              key={s.placeId}
+              type="button"
+              onMouseDown={() => handleSelect(s)}
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 2,
+                width: '100%', padding: '8px 12px', textAlign: 'left',
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)' }}>{s.mainText}</span>
+              <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{s.secondaryText}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface PartnerSheetProps {
   open: boolean
@@ -138,7 +228,10 @@ export default function PartnerSheet({ open, onClose, partner }: PartnerSheetPro
         </Field>
 
         <Field label="Endereço" hint="Endereço completo para geocodificação">
-          <Input value={form.address} onChange={set('address')} placeholder="Rua, número, cidade, estado" />
+          <AddressAutocomplete
+            value={form.address}
+            onChange={(address) => setForm((f) => ({ ...f, address }))}
+          />
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import L from 'leaflet'
+import { GoogleMap, MarkerClusterer, Marker, Circle, useJsApiLoader } from '@react-google-maps/api'
 import { api } from '../../lib/api'
 import type { MapPin } from '../../types'
-import { makeClusterGroup, makePinIcon } from './mapUtils'
+import { makePinIconUrl, PIN_ICON_SIZE } from './mapUtils'
+
+const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const t = {
@@ -37,20 +39,6 @@ function formatDist(km: number) {
 }
 
 const RADIUS_OPTIONS = [10, 25, 50, 100, 200]
-
-// ── "You are here" marker ─────────────────────────────────────────────────────
-function makeUserIcon() {
-  return L.divIcon({
-    className: '',
-    html: `
-      <div style="position:relative;width:20px;height:20px">
-        <div style="position:absolute;inset:0;border-radius:50%;background:${t.geo};border:3px solid white;box-shadow:0 2px 8px rgba(37,99,235,.5)"></div>
-        <div style="position:absolute;inset:-8px;border-radius:50%;background:${t.geo}22;animation:pulse 2s ease-out infinite"></div>
-      </div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-  })
-}
 
 // ── Geo error types ───────────────────────────────────────────────────────────
 type GeoStatus = 'idle' | 'loading' | 'granted' | 'denied' | 'unavailable'
@@ -235,7 +223,6 @@ function FilterPanel({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: isMobile ? '0 0 24px' : '16px', overflowY: 'auto' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontWeight: 700, fontSize: 14, color: t.fg }}>Filtros</span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -253,7 +240,6 @@ function FilterPanel({
         </div>
       </div>
 
-      {/* Geolocation */}
       <div style={field}>
         <label style={label}>Localização</label>
         {!userLocation ? (
@@ -328,13 +314,11 @@ function FilterPanel({
         )}
       </div>
 
-      {/* Search */}
       <div style={field}>
         <label style={label}>Busca</label>
         <input style={control} placeholder="Nome ou endereço…" value={filters.search} onChange={(e) => set({ search: e.target.value })} />
       </div>
 
-      {/* Estado */}
       <div style={field}>
         <label style={label}>Estado</label>
         <select style={control} value={filters.state} onChange={(e) => set({ state: e.target.value, city: '' })}>
@@ -343,7 +327,6 @@ function FilterPanel({
         </select>
       </div>
 
-      {/* Cidade */}
       <div style={field}>
         <label style={label}>Cidade</label>
         <select style={control} value={filters.city} onChange={(e) => set({ city: e.target.value })} disabled={!cities.length}>
@@ -352,7 +335,6 @@ function FilterPanel({
         </select>
       </div>
 
-      {/* Tipo de pin */}
       {pinTypes.length > 0 && (
         <div style={field}>
           <label style={label}>Tipo</label>
@@ -395,11 +377,8 @@ function FilterIcon() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function PublicMapPage() {
   const { token } = useParams<{ token: string }>()
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<L.Map | null>(null)
-  const clusterGroup = useRef<L.MarkerClusterGroup | null>(null)
-  const userMarker = useRef<L.Marker | null>(null)
-  const radiusCircle = useRef<L.Circle | null>(null)
+  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: MAPS_API_KEY, id: 'google-map-script' })
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   const [allPins, setAllPins] = useState<MapPin[]>([])
   const [pinTypes, setPinTypes] = useState<{ id: string; name: string; color: string }[]>([])
@@ -450,47 +429,7 @@ export default function PublicMapPage() {
     api.maps.publicLocalities(token, filters.state || undefined).then((l) => setCities(l.cities))
   }, [filters.state, token, ready])
 
-  useEffect(() => {
-    if (!ready || !mapRef.current || mapInstance.current) return
-    mapInstance.current = L.map(mapRef.current, { center: [-15.7942, -47.8825], zoom: 5 })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(mapInstance.current)
-    clusterGroup.current = makeClusterGroup()
-    mapInstance.current.addLayer(clusterGroup.current)
-  }, [ready])
-
-  // User location marker + radius circle
-  useEffect(() => {
-    if (!mapInstance.current) return
-
-    userMarker.current?.remove()
-    radiusCircle.current?.remove()
-    userMarker.current = null
-    radiusCircle.current = null
-
-    if (!userLocation) return
-
-    userMarker.current = L.marker([userLocation.lat, userLocation.lng], {
-      icon: makeUserIcon(),
-      zIndexOffset: 1000,
-    }).addTo(mapInstance.current)
-
-    radiusCircle.current = L.circle([userLocation.lat, userLocation.lng], {
-      radius: radius * 1000,
-      color: t.geo,
-      fillColor: t.geo,
-      fillOpacity: 0.06,
-      weight: 1.5,
-      dashArray: '6 4',
-    }).addTo(mapInstance.current)
-
-    mapInstance.current.flyTo([userLocation.lat, userLocation.lng], getZoomForRadius(radius), { duration: 1.2 })
-  }, [userLocation, radius])
-
-  // Update markers
-  const filtered = allPins.filter((p) => {
+  const filtered = useMemo(() => allPins.filter((p) => {
     if (filters.state && p.state !== filters.state) return false
     if (filters.city && p.city !== filters.city) return false
     if (filters.pinTypeId && p.pinType?.id !== filters.pinTypeId) return false
@@ -503,36 +442,33 @@ export default function PublicMapPage() {
       if (dist > radius) return false
     }
     return true
-  })
+  }), [allPins, filters, userLocation, radius])
 
-  useEffect(() => {
-    if (!clusterGroup.current) return
-    clusterGroup.current.clearLayers()
-    setSelectedPin(null)
-    setSelectedPinDist(undefined)
+  const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
-    const valid = filtered.filter((p) => p.lat && p.lng)
-    valid.forEach((pin) => {
-      const marker = L.marker([Number(pin.lat), Number(pin.lng)], {
-        icon: makePinIcon(pin.pinType?.color ?? '#4f46e5'),
-        title: pin.name,
-      })
-      marker.on('click', () => {
-        const dist = userLocation && pin.lat && pin.lng
-          ? haversine(userLocation.lat, userLocation.lng, Number(pin.lat), Number(pin.lng))
-          : undefined
-        setSelectedPin((prev) => prev?.id === pin.id ? null : pin)
-        setSelectedPinDist(dist)
-      })
-      clusterGroup.current!.addLayer(marker)
-    })
-
-    if (!userLocation && valid.length > 0) {
-      const bounds = L.latLngBounds(valid.map((p) => [Number(p.lat), Number(p.lng)]))
-      mapInstance.current?.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 })
+  const onMapLoad = (map: google.maps.Map) => {
+    mapRef.current = map
+    if (validPins.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+      map.fitBounds(bounds)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, allPins, ready, userLocation, radius])
+  }
+
+  // Fit bounds when pins load
+  useEffect(() => {
+    if (!mapRef.current || validPins.length === 0 || userLocation) return
+    const bounds = new google.maps.LatLngBounds()
+    validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+    mapRef.current.fitBounds(bounds)
+  }, [validPins, userLocation])
+
+  // Pan/zoom to user location
+  useEffect(() => {
+    if (!mapRef.current || !userLocation) return
+    mapRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng })
+    mapRef.current.setZoom(getZoomForRadius(radius))
+  }, [userLocation, radius])
 
   const requestGeo = () => {
     if (!navigator.geolocation) { setGeoStatus('unavailable'); return }
@@ -543,9 +479,6 @@ export default function PublicMapPage() {
         setGeoStatus('granted')
       },
       (err) => {
-        // code 1 = PERMISSION_DENIED (browser blocked, not retryable)
-        // code 2 = POSITION_UNAVAILABLE (OS-level permission missing, retryable after system settings)
-        // code 3 = TIMEOUT (transient, retryable)
         setGeoStatus(err.code === 1 ? 'denied' : 'unavailable')
       },
       { timeout: 10000, enableHighAccuracy: true },
@@ -555,10 +488,6 @@ export default function PublicMapPage() {
   const clearGeo = (resetStatus = true) => {
     setUserLocation(null)
     if (resetStatus) setGeoStatus('idle')
-    userMarker.current?.remove()
-    radiusCircle.current?.remove()
-    userMarker.current = null
-    radiusCircle.current = null
   }
 
   const hasActive = filters.state || filters.city || filters.pinTypeId || filters.search || userLocation
@@ -576,7 +505,6 @@ export default function PublicMapPage() {
         fontFamily: 'system-ui, -apple-system, sans-serif',
         color: '#fff',
       }}>
-        {/* Top-left wordmark */}
         <div style={{ padding: '20px 28px', flexShrink: 0 }}>
           <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
@@ -589,25 +517,16 @@ export default function PublicMapPage() {
           </a>
         </div>
 
-        {/* Center */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
           <div style={{ textAlign: 'center', maxWidth: 400 }}>
-
-            {/* Icon with glow */}
             <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
-              <div style={{
-                position: 'absolute',
-                width: 96, height: 96,
-                background: 'radial-gradient(circle, rgba(79,70,229,0.35) 0%, transparent 70%)',
-                borderRadius: '50%',
-              }}/>
+              <div style={{ position: 'absolute', width: 96, height: 96, background: 'radial-gradient(circle, rgba(79,70,229,0.35) 0%, transparent 70%)', borderRadius: '50%' }}/>
               <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2C8.686 2 6 4.686 6 8c0 4.667 6 12 6 12s6-7.333 6-12c0-3.314-2.686-6-6-6z"/>
                 <circle cx="12" cy="8" r="2"/>
                 <line x1="2" y1="20" x2="22" y2="20" strokeOpacity=".3"/>
               </svg>
             </div>
-
             <h1 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 10px', letterSpacing: '-0.4px', color: 'rgba(255,255,255,0.92)' }}>
               Este mapa está indisponível
             </h1>
@@ -615,7 +534,6 @@ export default function PublicMapPage() {
               O proprietário pausou o acesso público a este mapa.<br/>
               Entre em contato para mais informações.
             </p>
-
             <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 18px', borderRadius: 8,
@@ -628,11 +546,8 @@ export default function PublicMapPage() {
           </div>
         </div>
 
-        {/* Bottom */}
         <div style={{ padding: '16px 28px', textAlign: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.3px' }}>
-            POWERED BY ATLASYNC
-          </span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.3px' }}>POWERED BY ATLASYNC</span>
         </div>
       </div>
     )
@@ -641,25 +556,19 @@ export default function PublicMapPage() {
   if (error === 'not-found') {
     return (
       <div style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
+        height: '100vh', display: 'flex', flexDirection: 'column',
         background: '#0c0c0e',
         backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
         backgroundSize: '22px 22px',
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
+        alignItems: 'center', justifyContent: 'center', color: '#fff',
       }}>
         <div style={{ textAlign: 'center', padding: '0 24px' }}>
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
             <div style={{ position: 'absolute', width: 96, height: 96, background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)', borderRadius: '50%' }}/>
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              <line x1="11" y1="8"  x2="11" y2="14"/>
-              <line x1="8"  y1="11" x2="14" y2="11"/>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8"  x2="11" y2="14"/><line x1="8"  y1="11" x2="14" y2="11"/>
             </svg>
           </div>
           <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: 8, letterSpacing: '-0.3px' }}>Mapa não encontrado</div>
@@ -671,17 +580,12 @@ export default function PublicMapPage() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif', background: t.bg, color: t.fg }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* Header — fixed so it stays above the map on any zoom level */}
+      {/* Header */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 16px', background: t.bg, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', gap: 12, boxShadow: t.shadowSm, zIndex: 1000 }}>
-        <a
-          href="https://atlasync.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Powered by MappaHub"
-          style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}
-        >
+        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" title="Powered by MappaHub"
+          style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: t.accent, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" fill="white" stroke="none" />
@@ -723,9 +627,8 @@ export default function PublicMapPage() {
         </button>
       </div>
 
-      {/* Body — paddingTop accounts for the fixed header height (~46px) */}
+      {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', paddingTop: 46 }}>
-        {/* Desktop sidebar */}
         {!isMobile && filtersOpen && (
           <div style={{ width: 260, flexShrink: 0, background: t.bg, borderRight: `1px solid ${t.border}`, overflowY: 'auto', boxShadow: '2px 0 8px rgba(0,0,0,.04)' }}>
             <FilterPanel
@@ -737,10 +640,81 @@ export default function PublicMapPage() {
           </div>
         )}
 
-        {/* Map */}
         <div style={{ flex: 1, position: 'relative' }}>
-          <div ref={mapRef} style={{ position: 'absolute', inset: 0 }} />
-          {!ready && (
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ position: 'absolute', inset: 0 }}
+              center={{ lat: -15.7942, lng: -47.8825 }}
+              zoom={5}
+              options={{
+                mapTypeControl: false,
+                fullscreenControl: false,
+                streetViewControl: false,
+                gestureHandling: 'greedy',
+              }}
+              onLoad={onMapLoad}
+            >
+              <MarkerClusterer>
+                {(clusterer) => (
+                  <>
+                    {validPins.map((pin) => (
+                      <Marker
+                        key={pin.id}
+                        position={{ lat: Number(pin.lat), lng: Number(pin.lng) }}
+                        title={pin.name}
+                        icon={{
+                          url: makePinIconUrl(pin.pinType?.color ?? '#4f46e5'),
+                          scaledSize: new google.maps.Size(PIN_ICON_SIZE.width, PIN_ICON_SIZE.height),
+                          anchor: new google.maps.Point(PIN_ICON_SIZE.width / 2, PIN_ICON_SIZE.height),
+                        }}
+                        clusterer={clusterer}
+                        onClick={() => {
+                          const dist = userLocation && pin.lat && pin.lng
+                            ? haversine(userLocation.lat, userLocation.lng, Number(pin.lat), Number(pin.lng))
+                            : undefined
+                          setSelectedPin((prev) => prev?.id === pin.id ? null : pin)
+                          setSelectedPinDist(dist)
+                        }}
+                      />
+                    ))}
+                    {userLocation && (
+                      <Marker
+                        position={userLocation}
+                        icon={{
+                          path: google.maps.SymbolPath.CIRCLE,
+                          scale: 10,
+                          fillColor: t.geo,
+                          fillOpacity: 1,
+                          strokeColor: '#fff',
+                          strokeWeight: 3,
+                        }}
+                        zIndex={1000}
+                      />
+                    )}
+                  </>
+                )}
+              </MarkerClusterer>
+              {userLocation && (
+                <Circle
+                  center={userLocation}
+                  radius={radius * 1000}
+                  options={{
+                    strokeColor: t.geo,
+                    strokeOpacity: 0.7,
+                    strokeWeight: 1.5,
+                    fillColor: t.geo,
+                    fillOpacity: 0.06,
+                  }}
+                />
+              )}
+            </GoogleMap>
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.bg, gap: 12 }}>
+              <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTopColor: t.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ fontSize: 13, color: t.fgMuted }}>Carregando mapa…</div>
+            </div>
+          )}
+          {!ready && isLoaded && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.bg, gap: 12 }}>
               <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTopColor: t.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               <div style={{ fontSize: 13, color: t.fgMuted }}>Carregando mapa…</div>

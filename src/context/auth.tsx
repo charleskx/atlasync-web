@@ -12,6 +12,7 @@ interface AuthContextValue {
     tempToken?: string
   }>
   loginWithTotp: (tempToken: string, code: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -62,6 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshUser()
   }, [refreshUser])
 
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    await api.auth.loginWithGoogle(credential)
+    await refreshUser()
+  }, [refreshUser])
+
   const logout = useCallback(async () => {
     await api.auth.logout()
     setUser(null)
@@ -76,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         subscriptionStatus,
         login,
         loginWithTotp,
+        loginWithGoogle,
         logout,
         refreshUser,
       }}

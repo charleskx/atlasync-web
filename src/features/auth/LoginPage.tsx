@@ -1,13 +1,14 @@
 import axios from 'axios'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/auth'
 import { Button, Checkbox, Field, Input, useToast } from '../../components/ui'
 import { I } from '../../components/icons'
 import AuthAside from './AuthAside'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const { push } = useToast()
   const [email, setEmail] = useState('')
@@ -51,6 +52,25 @@ export default function LoginPage() {
           <h1 className="h1">Bem-vindo de volta</h1>
           <div className="muted text-sm">Entre na sua conta MappaHub</div>
           <div className="auth-form-fields">
+            <GoogleLogin
+              onSuccess={async (response) => {
+                if (!response.credential) return
+                try {
+                  await loginWithGoogle(response.credential)
+                  navigate('/dashboard')
+                } catch {
+                  push({ title: 'Erro ao entrar com Google', desc: 'Tente novamente.', tone: 'error' })
+                }
+              }}
+              onError={() => push({ title: 'Erro ao entrar com Google', desc: 'Tente novamente.', tone: 'error' })}
+              width="100%"
+              text="signin_with"
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>ou</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            </div>
             <Field label="E-mail">
               <Input
                 icon={<I.mail />}
