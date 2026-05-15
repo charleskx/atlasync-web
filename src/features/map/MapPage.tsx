@@ -329,21 +329,25 @@ export default function MapPage() {
 
   const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
+  const fitBounds = (map: google.maps.Map, pins: typeof validPins) => {
+    if (pins.length === 0) return
+    const bounds = new google.maps.LatLngBounds()
+    pins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+    map.fitBounds(bounds, 48)
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+      if (map.getZoom()! > 14) map.setZoom(14)
+    })
+  }
+
   const onMapLoad = (map: google.maps.Map) => {
     setMapRef(map)
-    if (validPins.length > 0) {
-      const bounds = new google.maps.LatLngBounds()
-      validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
-      map.fitBounds(bounds)
-    }
+    fitBounds(map, validPins)
   }
 
   // Fit bounds when filtered pins change
   useMemo(() => {
-    if (!mapRef || validPins.length === 0) return
-    const bounds = new google.maps.LatLngBounds()
-    validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
-    mapRef.fitBounds(bounds)
+    if (!mapRef) return
+    fitBounds(mapRef, validPins)
   }, [validPins, mapRef])
 
   const activeCount = [filters.search, filters.state, filters.city, filters.pinTypeId, filters.visibility].filter(Boolean).length

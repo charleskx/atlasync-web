@@ -446,21 +446,25 @@ export default function PublicMapPage() {
 
   const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
+  const fitBounds = (map: google.maps.Map, pins: typeof validPins) => {
+    if (pins.length === 0) return
+    const bounds = new google.maps.LatLngBounds()
+    pins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
+    map.fitBounds(bounds, 48)
+    google.maps.event.addListenerOnce(map, 'idle', () => {
+      if (map.getZoom()! > 14) map.setZoom(14)
+    })
+  }
+
   const onMapLoad = (map: google.maps.Map) => {
     mapRef.current = map
-    if (validPins.length > 0) {
-      const bounds = new google.maps.LatLngBounds()
-      validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
-      map.fitBounds(bounds)
-    }
+    fitBounds(map, validPins)
   }
 
   // Fit bounds when pins load
   useEffect(() => {
-    if (!mapRef.current || validPins.length === 0 || userLocation) return
-    const bounds = new google.maps.LatLngBounds()
-    validPins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
-    mapRef.current.fitBounds(bounds)
+    if (!mapRef.current || userLocation) return
+    fitBounds(mapRef.current, validPins)
   }, [validPins, userLocation])
 
   // Pan/zoom to user location
