@@ -81,6 +81,7 @@ interface InfoPopupProps {
   pin: MapPin
   distance?: number
   onClose: () => void
+  isMobile?: boolean
 }
 
 const NAV_APPS = [
@@ -104,7 +105,7 @@ const NAV_APPS = [
   },
 ]
 
-function InfoPopup({ pin, distance, onClose }: InfoPopupProps) {
+function InfoPopup({ pin, distance, onClose, isMobile }: InfoPopupProps) {
   const [navOpen, setNavOpen] = useState(false)
   const addressLines = [pin.address, [pin.city, pin.state].filter(Boolean).join(' — ')].filter(Boolean)
   const hasCoords = pin.lat != null && pin.lng != null
@@ -112,7 +113,7 @@ function InfoPopup({ pin, distance, onClose }: InfoPopupProps) {
   return (
     <div style={{
       position: 'absolute',
-      bottom: 20,
+      bottom: isMobile ? 72 : 20,
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 1000,
@@ -669,11 +670,11 @@ export default function PublicMapPage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif', background: t.bg, color: t.fg }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif', background: t.bg, color: t.fg }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.5);opacity:0}}`}</style>
 
-      {/* Header */}
-      <div style={{ padding: '10px 16px', background: t.bg, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, boxShadow: t.shadowSm, zIndex: 10 }}>
+      {/* Header — fixed so it stays above the map on any zoom level */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 16px', background: t.bg, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', gap: 12, boxShadow: t.shadowSm, zIndex: 1000 }}>
         <a
           href="https://atlasync.com"
           target="_blank"
@@ -722,8 +723,8 @@ export default function PublicMapPage() {
         </button>
       </div>
 
-      {/* Body */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+      {/* Body — paddingTop accounts for the fixed header height (~46px) */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', paddingTop: 46 }}>
         {/* Desktop sidebar */}
         {!isMobile && filtersOpen && (
           <div style={{ width: 260, flexShrink: 0, background: t.bg, borderRight: `1px solid ${t.border}`, overflowY: 'auto', boxShadow: '2px 0 8px rgba(0,0,0,.04)' }}>
@@ -745,7 +746,7 @@ export default function PublicMapPage() {
               <div style={{ fontSize: 13, color: t.fgMuted }}>Carregando mapa…</div>
             </div>
           )}
-          {selectedPin && <InfoPopup pin={selectedPin} distance={selectedPinDist} onClose={() => { setSelectedPin(null); setSelectedPinDist(undefined) }} />}
+          {selectedPin && <InfoPopup pin={selectedPin} distance={selectedPinDist} isMobile={isMobile} onClose={() => { setSelectedPin(null); setSelectedPinDist(undefined) }} />}
         </div>
       </div>
 
