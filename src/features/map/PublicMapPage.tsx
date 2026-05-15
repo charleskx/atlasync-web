@@ -88,20 +88,20 @@ const NAV_APPS = [
   {
     label: 'Google Maps',
     icon: 'https://www.google.com/favicon.ico',
-    url: (lat: number, lng: number) =>
-      `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    url: (address: string) =>
+      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`,
   },
   {
     label: 'Waze',
     icon: 'https://www.waze.com/favicon.ico',
-    url: (lat: number, lng: number) =>
-      `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+    url: (address: string) =>
+      `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`,
   },
   {
     label: 'Apple Maps',
     icon: 'https://www.apple.com/favicon.ico',
-    url: (lat: number, lng: number) =>
-      `https://maps.apple.com/?daddr=${lat},${lng}`,
+    url: (address: string) =>
+      `https://maps.apple.com/?daddr=${encodeURIComponent(address)}`,
   },
 ]
 
@@ -177,7 +177,7 @@ function InfoPopup({ pin, distance, onClose, isMobile }: InfoPopupProps) {
               {NAV_APPS.map(app => (
                 <a
                   key={app.label}
-                  href={app.url(pin.lat!, pin.lng!)}
+                  href={app.url(pin.address ?? '')}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setNavOpen(false)}
