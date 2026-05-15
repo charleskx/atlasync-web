@@ -545,3 +545,13 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 .pulse-a       { animation: pulse-ring  2.4s ease-out   infinite; transform-box: fill-box; transform-origin: center; }
 .pulse-b       { animation: pulse-ring  3s   ease-out   .6s  infinite; transform-box: fill-box; transform-origin: center; }
 .pulse-c       { animation: pulse-ring  2.8s ease-out   1.2s infinite; transform-box: fill-box; transform-origin: center; }
+
+/* Leaflet attribution — keep visible but minimal */
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  opacity: 0.4 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 4px !important;
+}
+.leaflet-control-attribution:hover { opacity: 0.8 !important; }
