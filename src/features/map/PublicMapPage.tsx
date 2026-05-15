@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { GoogleMap, MarkerClusterer, Marker, Circle, useJsApiLoader } from '@react-google-maps/api'
 import { api } from '../../lib/api'
@@ -446,26 +446,29 @@ export default function PublicMapPage() {
 
   const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
-  const fitBounds = (map: google.maps.Map, pins: typeof validPins) => {
-    if (pins.length === 0) return
+  const fitBounds = useCallback((pins: typeof validPins) => {
+    const map = mapRef.current
+    if (!map || pins.length === 0) return
     const bounds = new google.maps.LatLngBounds()
     pins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
     map.fitBounds(bounds, 48)
     google.maps.event.addListenerOnce(map, 'idle', () => {
       if (map.getZoom()! > 14) map.setZoom(14)
     })
-  }
+  }, [])
 
-  const onMapLoad = (map: google.maps.Map) => {
+  const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
-    fitBounds(map, validPins)
-  }
+    fitBounds(validPins)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitBounds])
 
-  // Fit bounds when pins load
+  // Re-fit when filters change; skip if user location is active (radius controls the view)
   useEffect(() => {
-    if (!mapRef.current || userLocation) return
-    fitBounds(mapRef.current, validPins)
-  }, [validPins, userLocation])
+    if (userLocation) return
+    fitBounds(validPins)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
 
   // Pan/zoom to user location
   useEffect(() => {

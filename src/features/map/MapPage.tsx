@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, MarkerClusterer, Marker, useJsApiLoader } from '@react-google-maps/api'
@@ -294,7 +294,7 @@ function FilterPanel({ filters, states, cities, pinTypes, onChange }: FilterPane
 // ── MapPage ───────────────────────────────────────────────────────────────────
 export default function MapPage() {
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: MAPS_API_KEY, id: 'google-map-script' })
-  const [mapRef, setMapRef] = useState<google.maps.Map | null>(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [filters, setFilters] = useState<Filters>({ search: '', state: '', city: '', pinTypeId: '', visibility: '' })
@@ -329,26 +329,28 @@ export default function MapPage() {
 
   const validPins = useMemo(() => filtered.filter((p) => p.lat && p.lng), [filtered])
 
-  const fitBounds = (map: google.maps.Map, pins: typeof validPins) => {
-    if (pins.length === 0) return
+  const fitBounds = useCallback((pins: typeof validPins) => {
+    const map = mapRef.current
+    if (!map || pins.length === 0) return
     const bounds = new google.maps.LatLngBounds()
     pins.forEach((p) => bounds.extend({ lat: Number(p.lat), lng: Number(p.lng) }))
     map.fitBounds(bounds, 48)
     google.maps.event.addListenerOnce(map, 'idle', () => {
       if (map.getZoom()! > 14) map.setZoom(14)
     })
-  }
+  }, [])
 
-  const onMapLoad = (map: google.maps.Map) => {
-    setMapRef(map)
-    fitBounds(map, validPins)
-  }
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+    fitBounds(validPins)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitBounds])
 
-  // Fit bounds when filtered pins change
-  useMemo(() => {
-    if (!mapRef) return
-    fitBounds(mapRef, validPins)
-  }, [validPins, mapRef])
+  // Re-fit only when filters change, not when a pin is clicked
+  useEffect(() => {
+    fitBounds(validPins)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
 
   const activeCount = [filters.search, filters.state, filters.city, filters.pinTypeId, filters.visibility].filter(Boolean).length
 
