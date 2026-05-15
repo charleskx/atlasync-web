@@ -264,6 +264,7 @@ export default function PartnersPage() {
         />
       ) : (
         <>
+          <div className="table-scroll">
           <table className="table">
             <thead>
               <tr>
@@ -326,6 +327,7 @@ export default function PartnersPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {totalPages > 1 && (
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
