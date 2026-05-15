@@ -19,7 +19,7 @@ const PLANS = [
   {
     key: 'monthly',
     label: 'Mensal',
-    price: 'R$ 297,90',
+    price: 'R$ 197,90',
     period: '/mês',
     priceDetail: null,
     highlight: null,
@@ -31,10 +31,10 @@ const PLANS = [
   {
     key: 'annual',
     label: 'Anual',
-    price: 'R$ 268,16',
+    price: 'R$ 177,90',
     period: '/mês',
-    priceDetail: 'R$ 3.217,90 cobrado anualmente',
-    highlight: 'Economize R$ 356,90 por ano',
+    priceDetail: 'R$ 2.134,80 cobrado anualmente',
+    highlight: 'Economize R$ 240,00 por ano',
     highlightTone: 'success' as const,
     note: null,
     badge: 'Recomendado',
