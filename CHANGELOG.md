@@ -44,7 +44,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Apply publicMapEnabled guard to PublicMapsPage
 - Animated promo page for disabled public map in IntegrationsPage
 - Remove Google Maps API key from UI and types
-- Replace plain logo with Powered by Atlasync link in public map
+- Replace plain logo with Powered by MappaHub link in public map
 - Restore iframe/script toggle in integrations embed cards
 - Wire dashboard to real data from /dashboard/stats API
 - Add filter sidebar to internal map (search, state, city, type, visibility)
@@ -57,7 +57,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Migrate maps from Google Maps to Leaflet + OpenStreetMap
 - Replace window.confirm with ConfirmDialog component in pin types
 - Add pin types CRUD and wire into app navigation
-- Complete React frontend for Atlasync
+- Complete React frontend for MappaHub
 
 ### Corrigido
 - Resolve all TypeScript build errors

@@ -30,7 +30,7 @@ export function PublicMapPromo({ onEnable }: Props) {
           <circle cx="62" cy="26" r="5" fill="var(--success)" opacity=".5"/>
           {/* URL bar */}
           <rect x="80" y="19" width="170" height="14" rx="4" fill="var(--bg)" stroke="var(--border)" strokeWidth="1"/>
-          <text x="165" y="30" fontSize="8" fill="var(--fg-muted)" textAnchor="middle" fontFamily="monospace">atlasync.com/mapa</text>
+          <text x="165" y="30" fontSize="8" fill="var(--fg-muted)" textAnchor="middle" fontFamily="monospace">mappahub.com.br/mapa</text>
 
           {/* Map grid */}
           <line x1="10"  y1="80"  x2="310" y2="80"  stroke="var(--border)" strokeWidth=".5" opacity=".6"/>
@@ -117,13 +117,13 @@ export function PublicMapPromo({ onEnable }: Props) {
           Habilitar mapa público
         </Button>
         <a
-          href="https://atlasync.com"
+          href="https://mappahub.com.br"
           target="_blank"
           rel="noopener noreferrer"
           className="muted text-sm"
           style={{ color: 'var(--fg-muted)' }}
         >
-          Saiba mais em atlasync.com →
+          Saiba mais em mappahub.com.br →
         </a>
       </div>
     </div>

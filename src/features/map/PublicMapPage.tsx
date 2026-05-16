@@ -525,7 +525,7 @@ export default function PublicMapPage() {
         color: '#fff',
       }}>
         <div style={{ padding: '20px 28px', flexShrink: 0 }}>
-          <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://mappahub.com.br" target="_blank" rel="noopener noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
             <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
               <rect width="32" height="32" rx="8" fill="#4f46e5"/>
@@ -553,7 +553,7 @@ export default function PublicMapPage() {
               O proprietário pausou o acesso público a este mapa.<br/>
               Entre em contato para mais informações.
             </p>
-            <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" style={{
+            <a href="https://mappahub.com.br" target="_blank" rel="noopener noreferrer" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 18px', borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.12)',
@@ -566,7 +566,7 @@ export default function PublicMapPage() {
         </div>
 
         <div style={{ padding: '16px 28px', textAlign: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.3px' }}>POWERED BY ATLASYNC</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.3px' }}>POWERED BY MAPPAHUB</span>
         </div>
       </div>
     )
@@ -603,7 +603,7 @@ export default function PublicMapPage() {
 
       {/* Header */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 16px', background: t.bg, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', gap: 12, boxShadow: t.shadowSm, zIndex: 1000 }}>
-        <a href="https://atlasync.com" target="_blank" rel="noopener noreferrer" title="Powered by MappaHub"
+        <a href="https://mappahub.com.br" target="_blank" rel="noopener noreferrer" title="Powered by MappaHub"
           style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: t.accent, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
