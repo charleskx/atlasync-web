@@ -101,7 +101,7 @@ function InfoPopup({ pin, distance, onClose, isMobile }: InfoPopupProps) {
   return (
     <div style={{
       position: 'absolute',
-      bottom: isMobile ? 72 : 20,
+      bottom: 20,
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 1000,
