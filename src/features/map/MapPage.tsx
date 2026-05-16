@@ -344,10 +344,13 @@ export default function MapPage() {
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
+    map.setCenter(MAP_CENTER)
+    map.setZoom(5)
   }, [])
 
   const onMapIdle = useCallback(() => {
-    setMapReady(true)
+    // Only flip to ready once — subsequent idle events are no-ops
+    setMapReady(prev => prev || true)
   }, [])
 
   // Initial fit — runs once when pins first load
@@ -405,8 +408,6 @@ export default function MapPage() {
           {isLoaded ? (
             <GoogleMap
               mapContainerStyle={{ position: 'absolute', inset: 0 }}
-              center={MAP_CENTER}
-              zoom={5}
               options={MAP_OPTIONS}
               onLoad={onMapLoad}
               onIdle={onMapIdle}
