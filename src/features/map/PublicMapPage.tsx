@@ -625,7 +625,12 @@ export default function PublicMapPage() {
         </div>
 
         <button
-          onClick={() => setFiltersOpen((v) => !v)}
+          onClick={() => {
+            setFiltersOpen((v) => {
+              if (!v && isMobile) { setSelectedPin(null); setSelectedPinDist(undefined) }
+              return !v
+            })
+          }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20,
             border: `1.5px solid ${hasActive ? t.accent : t.border}`,
