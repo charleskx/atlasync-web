@@ -374,6 +374,8 @@ function FilterIcon() {
   )
 }
 
+const MAP_CENTER = { lat: -15.7942, lng: -47.8825 }
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function PublicMapPage() {
   const { token } = useParams<{ token: string }>()
@@ -390,6 +392,7 @@ export default function PublicMapPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [error, setError] = useState<'not-found' | 'disabled' | null>(null)
   const [ready, setReady] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
 
   const [filters, setFilters] = useState<Filters>({ state: '', city: '', pinTypeId: '', search: '' })
@@ -460,6 +463,10 @@ export default function PublicMapPage() {
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
+  }, [])
+
+  const onMapIdle = useCallback(() => {
+    setMapReady(true)
   }, [])
 
   // Initial fit — runs once when pins first load
@@ -657,7 +664,7 @@ export default function PublicMapPage() {
           {isLoaded ? (
             <GoogleMap
               mapContainerStyle={{ position: 'absolute', inset: 0 }}
-              center={{ lat: -15.7942, lng: -47.8825 }}
+              center={MAP_CENTER}
               zoom={5}
               options={{
                 mapTypeControl: false,
@@ -666,8 +673,18 @@ export default function PublicMapPage() {
                 gestureHandling: 'greedy',
               }}
               onLoad={onMapLoad}
+              onIdle={onMapIdle}
             >
-              <MarkerClusterer>
+              {mapReady && <MarkerClusterer
+                options={{ zoomOnClick: false }}
+                onClick={(cluster) => {
+                  const map = mapRef.current
+                  if (!map) return
+                  map.setZoom(Math.min((map.getZoom() ?? 5) + 3, 16))
+                  const center = cluster.getCenter()
+                  if (center) map.panTo(center)
+                }}
+              >
                 {(clusterer) => (
                   <>
                     {validPins.map((pin) => (
@@ -706,7 +723,7 @@ export default function PublicMapPage() {
                     )}
                   </>
                 )}
-              </MarkerClusterer>
+              </MarkerClusterer>}
               {userLocation && (
                 <Circle
                   center={userLocation}
