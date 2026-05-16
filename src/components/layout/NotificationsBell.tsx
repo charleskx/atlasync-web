@@ -1,7 +1,8 @@
-import { useRef, useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useRef, useState, useEffect, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { useSSE } from '../../hooks/useSSE'
 import { I } from '../icons'
 
 type Notif = {
@@ -50,6 +51,7 @@ function notifColor(type: Notif['type']) {
 
 export default function NotificationsBell() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [lastSeen, setLastSeen] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? '')
   const ref = useRef<HTMLDivElement>(null)
@@ -57,8 +59,19 @@ export default function NotificationsBell() {
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => api.notifications.list(),
-    refetchInterval: 30_000,
     refetchOnWindowFocus: true,
+  })
+
+  const sseUrl = useMemo(() => api.notifications.eventsUrl(), [])
+
+  useSSE(sseUrl, {
+    notification: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+    'geocoding-updated': () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['geocoding-logs'] })
+    },
   })
 
   const unread = notifications.filter(n =>

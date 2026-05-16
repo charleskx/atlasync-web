@@ -472,6 +472,11 @@ export const api = {
       const { data } = await http.get('/notifications')
       return data
     },
+    eventsUrl(): string | null {
+      const token = localStorage.getItem('accessToken')
+      if (!token) return null
+      return `${BASE_URL}/notifications/events?token=${token}`
+    },
   },
 
   admin: {
