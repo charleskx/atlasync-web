@@ -1,6 +1,11 @@
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { useEffect, useRef } from 'react'
 
 type Handlers = Record<string, (data: unknown) => void>
+
+function getToken() {
+  return localStorage.getItem('accessToken')
+}
 
 export function useSSE(url: string | null, handlers: Handlers) {
   const handlersRef = useRef<Handlers>(handlers)
@@ -9,25 +14,31 @@ export function useSSE(url: string | null, handlers: Handlers) {
   useEffect(() => {
     if (!url) return
 
-    const es = new EventSource(url)
+    const controller = new AbortController()
 
-    const attached: Array<[string, (e: MessageEvent) => void]> = []
-
-    for (const event of Object.keys(handlersRef.current)) {
-      const listener = (e: MessageEvent) => {
+    fetchEventSource(url, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+      // Reconnect on transient failures
+      onopen: async (res) => {
+        if (!res.ok) throw new Error(`SSE open failed: ${res.status}`)
+      },
+      onmessage: (msg) => {
+        if (!msg.event || msg.event === 'ping') return
         try {
-          handlersRef.current[event]?.(JSON.parse(e.data))
+          handlersRef.current[msg.event]?.(JSON.parse(msg.data))
         } catch {}
-      }
-      es.addEventListener(event, listener)
-      attached.push([event, listener])
-    }
+      },
+      onerror: (err) => {
+        // Let the library retry on network errors; stop on auth errors
+        if (err instanceof Error && err.message.includes('401')) {
+          controller.abort()
+        }
+      },
+    })
 
-    return () => {
-      for (const [event, listener] of attached) {
-        es.removeEventListener(event, listener)
-      }
-      es.close()
-    }
+    return () => controller.abort()
   }, [url])
 }

@@ -127,6 +127,11 @@ export default function LoginPage() {
             Não tem uma conta?{' '}
             <Link to="/register">Criar conta grátis</Link>
           </div>
+          <div className="auth-form-foot" style={{ marginTop: 4, fontSize: 11.5 }}>
+            <Link to="/privacy-policy" target="_blank" style={{ color: 'var(--fg-subtle)' }}>
+              Política de Privacidade
+            </Link>
+          </div>
         </form>
       </div>
     </div>

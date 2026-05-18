@@ -376,8 +376,7 @@ export const api = {
       return data
     },
     progressUrl(id: string): string {
-      const token = localStorage.getItem('accessToken') ?? ''
-      return `${BASE_URL}/import/${id}/progress?token=${token}`
+      return `${BASE_URL}/import/${id}/progress`
     },
   },
 
@@ -473,9 +472,8 @@ export const api = {
       return data
     },
     eventsUrl(): string | null {
-      const token = localStorage.getItem('accessToken')
-      if (!token) return null
-      return `${BASE_URL}/notifications/events?token=${token}`
+      if (!localStorage.getItem('accessToken')) return null
+      return `${BASE_URL}/notifications/events`
     },
   },
 

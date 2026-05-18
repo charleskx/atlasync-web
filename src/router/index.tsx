@@ -27,6 +27,7 @@ const SuperAdminPage = lazy(() => import('../features/super-admin/SuperAdminPage
 const PinTypesPage = lazy(() => import('../features/pin-types/PinTypesPage'))
 const TicketsPage = lazy(() => import('../features/tickets/TicketsPage'))
 const GeocodingLogsPage = lazy(() => import('../features/geocoding/GeocodingLogsPage'))
+const PrivacyPolicyPage = lazy(() => import('../features/privacy/PrivacyPolicyPage'))
 
 function Loader() {
   return (
@@ -63,8 +64,9 @@ export default function AppRouter() {
         <Route path="/2fa" element={<TwoFactorPage />} />
         <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
 
-        {/* Public map — no auth required */}
+        {/* Public pages — no auth required */}
         <Route path="/public-map/:token" element={<PublicMapPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
         {/* Protected shell routes */}
         <Route

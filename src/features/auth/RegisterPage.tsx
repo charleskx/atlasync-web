@@ -141,6 +141,14 @@ export default function RegisterPage() {
                     <option value="other">Outro</option>
                   </Select>
                 </Field>
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.55, margin: 0 }}>
+                  Ao criar sua conta, você concorda com nossos{' '}
+                  <a href="/privacy-policy" target="_blank" style={{ color: 'var(--accent)' }}>
+                    Termos de Uso e Política de Privacidade
+                  </a>
+                  . Seus dados serão usados exclusivamente para operar a plataforma, conforme a{' '}
+                  <strong>LGPD (Lei 13.709/2018)</strong>.
+                </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button variant="outline" onClick={() => setStep(1)}>
                     Voltar
